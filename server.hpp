@@ -1,30 +1,33 @@
+#pragma once
+#include<utility>
 #include<iostream>
+#include<unordered_map>
 #include<cstdlib>
 #include<unistd.h>
 #include<strings.h>
 #include<sys/types.h>
+#include<sys/epoll.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include"comm.hpp"
+#include"connection.hpp"
 enum{
     SOCK_ERR = 1,
     BIND_ERR,
     LISTEN_ERR,
+    EPOLL_ERR,
+    LIS_NONBLOCK_ERR,
 };
 const uint16_t default_port = 65535;
 const int default_backlog = 5;
+const unsigned int default_inevent = EPOLLIN|EPOLLET;
+const unsigned int default_outevent = EPOLLOUT|EPOLLET;
+const int default_timeout = -1;
+const int occur_num = 32;
 class server
 {
 public:
-    static server& getinstance()
-    {
-        if(nullptr == svr)
-        {  
-            svr = new server();
-            svr->init();
-        }
-        return *svr;
-    }
-    void init(int backlog = default_backlog)
+    void _init(int backlog = default_backlog)
     {
         _socket();          //创建socket
         _bind();            //绑定端口
@@ -63,12 +66,138 @@ public:
         }
     }
     ~server(){close(_listen_socket);}
-private:
+protected:
     uint16_t _port;
-    int _listen_socket;
-    static server* svr;
-    server(uint16_t port = default_port):_port(port),_listen_socket(-1){}
+    int _listen_socket = -1;
+    server(uint16_t port):_port(port){}
     server(server& obj) = delete;
     server& operator=(const server& obj) = delete;
 };
-server* server::svr = nullptr;
+class httpsvr final : public server
+{
+public:
+    ~httpsvr(){delete _svr;}
+    static httpsvr& getinstance(uint16_t port = default_port)
+    {
+        if(nullptr == _svr)
+        {
+            _svr = new httpsvr(port);
+            _svr->init();
+        }
+        return *_svr;
+    }
+    void init() 
+    {
+        _svr->_init();
+        _epfd = epoll_create(128);
+        if(_epfd < 0)
+        {
+            //log
+            exit(EPOLL_ERR);
+        }
+        if(!set_nonblock(_listen_socket))
+            exit(LIS_NONBLOCK_ERR);
+        epoll_data_t listen_data;
+        listen_data.fd = _listen_socket;
+        struct epoll_event listen_event = {default_inevent,listen_data};
+        epoll_ctl(_epfd,EPOLL_CTL_ADD,_listen_socket,&listen_event);    //监听套接字加入多路转接
+        connection* con = new connection(_listen_socket,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
+        _connects.insert(std::make_pair(_listen_socket,con));
+        bzero((void*)_occur,sizeof(_occur));
+    }
+    void loop()
+    {
+        _run = true;
+        while(_run)
+        {
+            // struct sockaddr_in peer;
+            // socklen_t len = sizeof(peer);
+            // int iofd = accept(_listen_socket,(struct sockaddr*)&peer,&len);
+            // if(iofd < 0)
+            // {
+            //     //log
+            //     continue;
+            // }
+            // std::cout << "get a new link!" << std::endl;
+            // sleep(5);
+            // close(iofd);
+            int n = epoll_wait(_epfd,_occur,occur_num,default_timeout);
+            for(size_t i = 0;i < n;++i)
+            {
+                unsigned int events = _occur[i].events;
+                int fd = _occur[i].data.fd;
+                if(events&EPOLLHUP || events&EPOLLERR)
+                {
+                    if(_connects[fd]->_except_cb)
+                        _connects[fd]->_except_cb(*_connects[fd]);
+                }
+                if(events&EPOLLIN)
+                {
+                    if(_connects[fd]->_recv_cb)
+                        _connects[fd]->_recv_cb(*_connects[fd]);
+                }
+                if(events&EPOLLOUT)
+                {
+                    if(_connects[fd]->_send_cb)
+                        _connects[fd]->_send_cb(*_connects[fd]);
+                }
+            }
+        }
+    }
+    void accepter(connection& con)
+    {
+        struct sockaddr_in client;
+        socklen_t len = sizeof(client);
+        bzero((void*)&client,len);
+        while(true)
+        {
+            int iofd = accept(_listen_socket,(struct sockaddr*)&client,&len);
+            if(iofd < 0)
+            {
+                if(errno == EWOULDBLOCK) break;
+                else if(errno == EINTR) continue;
+                else break;
+            }
+            uint16_t port = ntohs(client.sin_port);
+            char ip[16];
+            std::string _ip;
+            const char* ret = inet_ntop(AF_INET,(const void*)&client.sin_addr.s_addr,ip,sizeof(ip));
+            if(ret)
+            {
+                _ip += ip;
+            }
+            else
+            {
+                //log IP转换失败
+            }
+            connection* link = new connection(iofd,std::bind(&httpsvr::receiver,this,std::placeholders::_1),
+                                                std::bind(&httpsvr::sender,this,std::placeholders::_1),
+                                                std::bind(&httpsvr::excepter,this,std::placeholders::_1));
+            link->set_ip(_ip);
+            link->set_port(port);
+            _connects.insert(std::make_pair(iofd,link));
+        }
+    }
+    void sender(connection& con)
+    {
+
+    }
+    void receiver(connection& con)
+    {
+
+    }
+    void excepter(connection& con)
+    {
+
+    }
+private:
+    static httpsvr* _svr;
+    bool _run = false;
+    int _epfd = -1;
+    std::unordered_map<int,connection*> _connects;
+    struct epoll_event _occur[occur_num];
+    httpsvr(uint16_t port):server(port){}
+    httpsvr(httpsvr& obj) = delete;
+    httpsvr& operator=(const httpsvr& obj) = delete;
+};
+httpsvr* httpsvr::_svr = nullptr;
