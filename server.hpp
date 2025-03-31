@@ -3,6 +3,7 @@
 #include<iostream>
 #include<unordered_map>
 #include<cstdlib>
+#include<signal.h>
 #include<unistd.h>
 #include<strings.h>
 #include<sys/types.h>
@@ -20,8 +21,6 @@ enum{
 };
 const uint16_t default_port = 65535;
 const int default_backlog = 5;
-const unsigned int default_inevent = EPOLLIN|EPOLLET;
-const unsigned int default_outevent = EPOLLOUT|EPOLLET;
 const int default_timeout = -1;
 const int occur_num = 32;
 class server
@@ -88,6 +87,7 @@ public:
     }
     void init() 
     {
+        signal(SIGPIPE,SIG_IGN);
         _svr->_init();
         _epfd = epoll_create(128);
         if(_epfd < 0)
@@ -101,7 +101,7 @@ public:
         listen_data.fd = _listen_socket;
         struct epoll_event listen_event = {default_inevent,listen_data};
         epoll_ctl(_epfd,EPOLL_CTL_ADD,_listen_socket,&listen_event);    //监听套接字加入多路转接
-        connection* con = new connection(_listen_socket,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
+        connection* con = new connection(_listen_socket,_epfd,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
         _connects.insert(std::make_pair(_listen_socket,con));
         bzero((void*)_occur,sizeof(_occur));
     }
@@ -121,16 +121,16 @@ public:
             // std::cout << "get a new link!" << std::endl;
             // sleep(5);
             // close(iofd);
-            int n = epoll_wait(_epfd,_occur,occur_num,default_timeout);
+            int n = epoll_wait(_epfd,_occur,sizeof(_occur)/sizeof(_occur[0]),default_timeout);
             for(size_t i = 0;i < n;++i)
             {
                 unsigned int events = _occur[i].events;
                 int fd = _occur[i].data.fd;
-                if(events&EPOLLHUP || events&EPOLLERR)
-                {
-                    if(_connects[fd]->_except_cb)
-                        _connects[fd]->_except_cb(*_connects[fd]);
-                }
+                // if(events&EPOLLHUP || events&EPOLLERR)
+                // {
+                //     if(_connects[fd]->_except_cb)
+                //         _connects[fd]->_except_cb(*_connects[fd]);
+                // }
                 if(events&EPOLLIN)
                 {
                     if(_connects[fd]->_recv_cb)
@@ -158,6 +158,7 @@ public:
                 else if(errno == EINTR) continue;
                 else break;
             }
+            set_nonblock(iofd);
             uint16_t port = ntohs(client.sin_port);
             char ip[16];
             std::string _ip;
@@ -170,25 +171,38 @@ public:
             {
                 //log IP转换失败
             }
-            connection* link = new connection(iofd,std::bind(&httpsvr::receiver,this,std::placeholders::_1),
+            connection* link = new connection(iofd,_epfd,std::bind(&httpsvr::receiver,this,std::placeholders::_1),
                                                 std::bind(&httpsvr::sender,this,std::placeholders::_1),
                                                 std::bind(&httpsvr::excepter,this,std::placeholders::_1));
             link->set_ip(_ip);
             link->set_port(port);
             _connects.insert(std::make_pair(iofd,link));
+            epoll_data_t new_data;
+            new_data.fd = iofd;
+            struct epoll_event new_event = {default_inevent,new_data};
+            epoll_ctl(_epfd,EPOLL_CTL_ADD,iofd,&new_event);
         }
     }
     void sender(connection& con)
     {
-
+        con._sendtoclient();
     }
     void receiver(connection& con)
     {
-
+        con._readtobuff();
+        if(con.iscomplete())
+        {
+            con.handle();
+            con._sendtoclient();
+        }
     }
     void excepter(connection& con)
     {
-
+        int fd = con.getfd();
+        epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
+        close(fd);
+        delete &con;
+        _connects.erase(fd);
     }
 private:
     static httpsvr* _svr;
