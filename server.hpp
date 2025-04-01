@@ -139,6 +139,7 @@ public:
                 }
                 if(events&EPOLLOUT)
                 {
+                    if(default_timeout > 0) sleep(default_timeout);
                     if(_connects[fd]->_send_cb)
                         _connects[fd]->_send_cb(*_connects[fd]);
                 }
@@ -155,8 +156,16 @@ public:
             int iofd = accept(_listen_socket,(struct sockaddr*)&client,&len);
             if(iofd < 0)
             {
-                if(errno == EWOULDBLOCK) break;
-                else if(errno == EINTR) continue;
+                if(errno == EWOULDBLOCK)
+                {
+                    errno = 0;
+                    break;
+                }
+                else if(errno == EINTR)
+                {
+                    errno = 0;
+                    continue;
+                }
                 else break;
             }
             set_nonblock(iofd);
@@ -191,7 +200,7 @@ public:
     void receiver(connection& con)
     {
         con._readtobuff();
-        if(con.iscomplete())
+        if(con.iscomplete()&&issafe(con.getfd()))   //如果发送缓冲区满了呢？
         {
             con.handle();
             con._sendtoclient();
@@ -204,6 +213,12 @@ public:
         close(fd);
         delete &con;
         _connects.erase(fd);
+    }
+    bool issafe(int fd)
+    {
+        auto it = _connects.find(fd);
+        if(it != _connects.end()) return true;
+        return false;
     }
 private:
     static httpsvr* _svr;
