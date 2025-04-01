@@ -87,6 +87,8 @@ public:
     }
     void init() 
     {
+        int opt = 1;
+        setsockopt(_listen_socket,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,sizeof(opt));
         signal(SIGPIPE,SIG_IGN);
         _svr->_init();
         _epfd = epoll_create(128);
@@ -126,11 +128,10 @@ public:
             {
                 unsigned int events = _occur[i].events;
                 int fd = _occur[i].data.fd;
-                // if(events&EPOLLHUP || events&EPOLLERR)
-                // {
-                //     if(_connects[fd]->_except_cb)
-                //         _connects[fd]->_except_cb(*_connects[fd]);
-                // }
+                if(events&EPOLLHUP || events&EPOLLERR)
+                {
+                    events |= (EPOLLIN|EPOLLOUT);
+                }
                 if(events&EPOLLIN)
                 {
                     if(_connects[fd]->_recv_cb)

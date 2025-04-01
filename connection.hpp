@@ -8,8 +8,8 @@ class connection;
 using fun_t = std::function<void(connection&)>;
 const size_t default_send = 128;
 const size_t default_recv = 128;
-const unsigned int default_inevent = EPOLLIN|EPOLLET;
-const unsigned int default_outevent = EPOLLOUT|EPOLLET;
+const unsigned int default_inevent = (EPOLLIN|EPOLLET);
+const unsigned int default_outevent = (EPOLLOUT|EPOLLET);
 class connection
 {
 public:
@@ -116,7 +116,7 @@ public:
             //开启写关心
             epoll_data_t mod_data;
             mod_data.fd = _fd;
-            struct epoll_event mod_event = {default_inevent|default_outevent,mod_data};
+            struct epoll_event mod_event = {(default_inevent|default_outevent),mod_data};
             epoll_ctl(__epfd,EPOLL_CTL_MOD,_fd,&mod_event);
         }
     }
