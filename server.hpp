@@ -139,7 +139,6 @@ public:
                 }
                 if(events&EPOLLOUT)
                 {
-                    if(default_timeout > 0) sleep(default_timeout);
                     if(_connects[fd]->_send_cb)
                         _connects[fd]->_send_cb(*_connects[fd]);
                 }
@@ -200,7 +199,7 @@ public:
     void receiver(connection& con)
     {
         con._readtobuff();
-        if(con.iscomplete()&&issafe(con.getfd()))   //如果发送缓冲区满了呢？
+        if(con.iscomplete()&&issafe(con.getfd()))   
         {
             con.handle();
             con._sendtoclient();
