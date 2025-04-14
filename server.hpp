@@ -12,6 +12,7 @@
 #include<sys/socket.h>
 #include"comm.hpp"
 #include"connection.hpp"
+#include"threadpool.hpp"
 enum{
     SOCK_ERR = 1,
     BIND_ERR,
@@ -29,8 +30,14 @@ public:
     void _init(int backlog = default_backlog)
     {
         _socket();          //创建socket
+        _reuse_port();      //设置端口复用
         _bind();            //绑定端口
         _listen(backlog);   //设置socket为监听状态
+    }
+    void _reuse_port()
+    {
+        int opt = 1;
+        setsockopt(_listen_socket,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,sizeof(opt));
     }
     void _socket() 
     {
@@ -87,8 +94,6 @@ public:
     }
     void init() 
     {
-        int opt = 1;
-        setsockopt(_listen_socket,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,sizeof(opt));
         signal(SIGPIPE,SIG_IGN);
         _svr->_init();
         _epfd = epoll_create(128);
@@ -106,6 +111,7 @@ public:
         connection* con = new connection(_listen_socket,_epfd,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
         _connects.insert(std::make_pair(_listen_socket,con));
         bzero((void*)_occur,sizeof(_occur));
+        _ptp = threadpool::getinstance();
     }
     void loop()
     {
@@ -194,15 +200,14 @@ public:
     }
     void sender(connection& con)
     {
-        con._sendtoclient();
+        _ptp->push_task(&con);
     }
     void receiver(connection& con)
     {
         con._readtobuff();
         if(con.iscomplete()&&issafe(con.getfd()))   
         {
-            con.handle();
-            con._sendtoclient();
+            _ptp->push_task(&con);
         }
     }
     void excepter(connection& con)
@@ -221,11 +226,12 @@ public:
     }
 private:
     static httpsvr* _svr;
+    threadpool* _ptp;
     bool _run = false;
     int _epfd = -1;
     std::unordered_map<int,connection*> _connects;
     struct epoll_event _occur[occur_num];
-    httpsvr(uint16_t port):server(port){}
+    httpsvr(uint16_t port):server(port),_ptp(nullptr){}
     httpsvr(httpsvr& obj) = delete;
     httpsvr& operator=(const httpsvr& obj) = delete;
 };

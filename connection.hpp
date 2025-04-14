@@ -4,6 +4,7 @@
 #include<functional>
 #include<string>
 #include<sys/epoll.h>
+#include<pthread.h>
 class connection;
 using fun_t = std::function<void(connection&)>;
 const size_t default_send = 128;
@@ -16,18 +17,27 @@ public:
     fun_t _recv_cb;
     fun_t _send_cb;
     fun_t _except_cb;
-    connection(int fd,int epfd,fun_t recv_cb,fun_t send_cb,fun_t except_cb):_fd(fd),__epfd(epfd),_recv_cb(recv_cb),_send_cb(send_cb),_except_cb(except_cb),_client_port(0){}
-    ~connection(){}
+    connection(int fd,int epfd,fun_t recv_cb,fun_t send_cb,fun_t except_cb):_fd(fd),__epfd(epfd),_recv_cb(recv_cb),_send_cb(send_cb),_except_cb(except_cb),_client_port(0)
+    {
+        pthread_mutex_init(&_lock,nullptr);
+    }
+    ~connection()
+    {
+        pthread_mutex_destroy(&_lock);
+    }
     int getfd() {return _fd;}
     void set_ip(const std::string& ip) {_client_ip = ip;}
     void set_port(const uint16_t& port) {_client_port = port;}
     const std::string& get_ip() {return _client_ip;}
     const uint16_t& get_port() {return _client_port;}
+    void lock() {pthread_mutex_lock(&_lock);}
+    void unlock() {pthread_mutex_unlock(&_lock);}
     void _readtobuff()
     {
         char buffer[default_recv];
         bzero((void*)buffer,sizeof(buffer));
         size_t len = sizeof(buffer);
+        lock();
         while(true)
         {
             ssize_t n = recv(_fd,buffer,len,0);
@@ -55,21 +65,25 @@ public:
                 bzero((void*)buffer,sizeof(buffer));
             }
         }
+        unlock();
     }
-    bool iscomplete()
+    bool iscomplete()  
     {
         return true;
     }
     void handle()
     {
+        lock();
         _sendbuffer = _recvbuffer;
         _recvbuffer.erase(_recvbuffer.begin(),_recvbuffer.end());
+        unlock();
     }
     void _sendtoclient()
     {
         char buffer[default_send];
         size_t n = 0;
         size_t buffer_size = sizeof(buffer);
+        lock();
         while(!_sendbuffer.empty())
         {
             bzero((void*)buffer,buffer_size);
@@ -100,6 +114,7 @@ public:
                 auto it = _sendbuffer.begin();
                 for(size_t i = 0;i < m;++i) ++it;
                 _sendbuffer.erase(_sendbuffer.begin(),it);
+                n = 0;
                 if(m < n) break;    //发送缓冲区满了
             }
         }
@@ -119,6 +134,7 @@ public:
             struct epoll_event mod_event = {(default_inevent|default_outevent),mod_data};
             epoll_ctl(__epfd,EPOLL_CTL_MOD,_fd,&mod_event);
         }
+        unlock();
     }
 private:
     int _fd;
@@ -127,4 +143,5 @@ private:
     std::vector<char> _recvbuffer;
     std::string _client_ip;
     uint16_t _client_port;
+    pthread_mutex_t _lock;          //保证同时只有单执行流执行该任务
 };
