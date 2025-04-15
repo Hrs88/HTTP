@@ -82,7 +82,7 @@ protected:
 class httpsvr final : public server
 {
 public:
-    ~httpsvr(){delete _svr;}
+    ~httpsvr(){}
     static httpsvr& getinstance(uint16_t port = default_port)
     {
         if(nullptr == _svr)
@@ -110,6 +110,9 @@ public:
         epoll_ctl(_epfd,EPOLL_CTL_ADD,_listen_socket,&listen_event);    //监听套接字加入多路转接
         connection* con = new connection(_listen_socket,_epfd,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
         _connects.insert(std::make_pair(_listen_socket,con));
+        get_safe_lock();
+        safe_code.insert(con);
+        put_safe_lock();
         bzero((void*)_occur,sizeof(_occur));
         _ptp = threadpool::getinstance();
     }
@@ -192,6 +195,9 @@ public:
             link->set_ip(_ip);
             link->set_port(port);
             _connects.insert(std::make_pair(iofd,link));
+            get_safe_lock();
+            safe_code.insert(link);
+            put_safe_lock();
             epoll_data_t new_data;
             new_data.fd = iofd;
             struct epoll_event new_event = {default_inevent,new_data};
@@ -210,8 +216,9 @@ public:
             _ptp->push_task(&con);
         }
     }
-    void excepter(connection& con)
+    void excepter(connection& con)          //进入该函数前就已得到安全锁，无需再加锁
     {
+        safe_code.erase(&con);
         int fd = con.getfd();
         epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
         close(fd);

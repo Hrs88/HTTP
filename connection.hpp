@@ -3,6 +3,7 @@
 #include<vector>
 #include<functional>
 #include<string>
+#include<unordered_set>
 #include<sys/epoll.h>
 #include<pthread.h>
 class connection;
@@ -11,6 +12,11 @@ const size_t default_send = 128;
 const size_t default_recv = 128;
 const unsigned int default_inevent = (EPOLLIN|EPOLLET);
 const unsigned int default_outevent = (EPOLLOUT|EPOLLET);
+class connection;
+std::unordered_set<connection*> safe_code;                  //安全队列，确保执行流不会对已关闭连接进行操作
+pthread_mutex_t _safe_lock = PTHREAD_MUTEX_INITIALIZER;
+void get_safe_lock() {pthread_mutex_lock(&_safe_lock);}
+void put_safe_lock() {pthread_mutex_unlock(&_safe_lock);}
 class connection
 {
 public:
@@ -55,7 +61,10 @@ public:
                     continue;
                 }
                 //log 未知错误&&对端关闭
-                _except_cb(*this);
+                get_safe_lock();
+                if(safe_code.count(this))
+                    _except_cb(*this);
+                put_safe_lock();
                 return;
             }
             else
@@ -106,7 +115,10 @@ public:
                     continue;
                 } 
                 //log 未知错误
-                _except_cb(*this);
+                get_safe_lock();
+                if(safe_code.count(this))
+                    _except_cb(*this);
+                put_safe_lock();
                 return;
             }
             else
@@ -125,6 +137,10 @@ public:
             mod_data.fd = _fd;
             struct epoll_event mod_event = {default_inevent,mod_data};
             epoll_ctl(__epfd,EPOLL_CTL_MOD,_fd,&mod_event);
+            get_safe_lock();
+            if(safe_code.count(this))
+                _except_cb(*this);          //单次响应结束，关闭连接
+            put_safe_lock();
         }
         else
         {
