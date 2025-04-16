@@ -10,6 +10,7 @@
 #include<sys/epoll.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include"log.hpp"
 #include"comm.hpp"
 #include"connection.hpp"
 #include"threadpool.hpp"
@@ -37,16 +38,19 @@ public:
     void _reuse_port()
     {
         int opt = 1;
-        setsockopt(_listen_socket,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,sizeof(opt));
+        int ret = setsockopt(_listen_socket,SOL_SOCKET,SO_REUSEADDR|SO_REUSEPORT,&opt,sizeof(opt));
+        if(ret == 0) _log(INFO,__FILE__,__LINE__,"set port reuse successfully.");
+        else _log(WARNING,__FILE__,__LINE__,"set port reuse error.");
     }
     void _socket() 
     {
         _listen_socket = socket(AF_INET,SOCK_STREAM,0);
         if(_listen_socket < 0)
         {
-            //log
+            _log(FATAL,__FILE__,__LINE__,"socket error.");
             exit(SOCK_ERR);
         }
+        _log(INFO,__FILE__,__LINE__,"socket success.");
     }
     void _bind() 
     {
@@ -58,18 +62,20 @@ public:
         int n = bind(_listen_socket,(struct sockaddr*)&local,sizeof(local));
         if(n < 0)
         {
-            //log
+            _log(FATAL,__FILE__,__LINE__,"bind error.");
             exit(BIND_ERR);
         }
+        _log(INFO,__FILE__,__LINE__,"bind success.");
     }
     void _listen(int backlog)
     {
         int n = listen(_listen_socket,backlog);
         if(n < 0)
         {
-            //log
+            _log(FATAL,__FILE__,__LINE__,"listen error.");
             exit(LISTEN_ERR);
         }
+        _log(INFO,__FILE__,__LINE__,"listen success.");
     }
     ~server(){close(_listen_socket);}
 protected:
@@ -89,6 +95,7 @@ public:
         {
             _svr = new httpsvr(port);
             _svr->init();
+            _log(INFO,__FILE__,__LINE__,"httpsvr is created.");
         }
         return *_svr;
     }
@@ -99,11 +106,16 @@ public:
         _epfd = epoll_create(128);
         if(_epfd < 0)
         {
-            //log
+            _log(FATAL,__FILE__,__LINE__,"epoll create error.");
             exit(EPOLL_ERR);
         }
+        _log(INFO,__FILE__,__LINE__,"epoll create success.");
         if(!set_nonblock(_listen_socket))
+        {
+            _log(ERROR,__FILE__,__LINE__,"set listen_socket nonblock error.");
             exit(LIS_NONBLOCK_ERR);
+        }
+        _log(INFO,__FILE__,__LINE__,"set listen_socket nonblock success.");
         epoll_data_t listen_data;
         listen_data.fd = _listen_socket;
         struct epoll_event listen_event = {default_inevent,listen_data};
@@ -119,6 +131,7 @@ public:
     void loop()
     {
         _run = true;
+        _log(INFO,__FILE__,__LINE__,"server start loop.");
         while(_run)
         {
             // struct sockaddr_in peer;
@@ -202,6 +215,7 @@ public:
             new_data.fd = iofd;
             struct epoll_event new_event = {default_inevent,new_data};
             epoll_ctl(_epfd,EPOLL_CTL_ADD,iofd,&new_event);
+            _log(INFO,__FILE__,__LINE__,"get a new link: %d",iofd);
         }
     }
     void sender(connection& con)
@@ -224,6 +238,7 @@ public:
         close(fd);
         delete &con;
         _connects.erase(fd);
+        _log(INFO,__FILE__,__LINE__,"delete a link: %d",fd);
     }
     bool issafe(int fd)
     {

@@ -2,6 +2,7 @@
 #include<pthread.h>
 #include<queue>
 #include"connection.hpp"
+#include"log.hpp"
 const size_t default_pthread_num = 5;
 const size_t default_cap = 10;
 class threadpool final
@@ -28,6 +29,7 @@ public:
         {
             _tp = new threadpool(default_pthread_num,default_cap);
             _tp->init();
+            _log(INFO,__FILE__,__LINE__,"threadpool is created.");
         }
         return _tp;
     }
@@ -43,6 +45,7 @@ public:
             _threads.push_back(tid);
             pthread_detach(tid);
         }
+        _log(INFO,__FILE__,__LINE__,"the %d threads in threadpool is created successfully.",_thread_num);
     }
     void push_task(connection* p_con)                       //生产者进行生产
     {
@@ -51,6 +54,7 @@ public:
         _tasks.push(p_con);
         c_wake();
         unlock();
+        _log(INFO,__FILE__,__LINE__,"push a task.");
     }
     connection& pop_task()                                  //消费者进行消费
     {
@@ -61,6 +65,7 @@ public:
         _tasks.pop();
         p_wake();
         unlock();
+        _log(INFO,__FILE__,__LINE__,"get a task.");
         return *next_task;
     }
 private:
@@ -82,6 +87,7 @@ private:
             connection& con = _tp->pop_task();
             con.handle();
             con._sendtoclient();
+            _log(INFO,__FILE__,__LINE__,"finish a task.");
         }
     }
 };
