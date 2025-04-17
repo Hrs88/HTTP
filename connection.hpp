@@ -4,7 +4,12 @@
 #include<functional>
 #include<string>
 #include<unordered_set>
+#include<cstdlib>
+#include<cstring>
 #include<sys/epoll.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<strings.h>
 #include<pthread.h>
 class connection;
 using fun_t = std::function<void(connection&)>;
@@ -76,9 +81,39 @@ public:
         }
         unlock();
     }
-    bool iscomplete()  
+    size_t iscomplete()  
     {
-        return true;
+        std::string sep;            //确认行分隔符
+        size_t i = 0;
+        while(i < _recvbuffer.size())
+        {
+            if(_recvbuffer[i] == '\r' || _recvbuffer[i] == '\n') break;
+            i++;
+        }
+        if(i == _recvbuffer.size()) return 0;
+        if(i + 1 < _recvbuffer.size() && _recvbuffer[i] == _recvbuffer[i+1] || i + 1 < _recvbuffer.size() && isalpha(_recvbuffer[i+1])) sep += _recvbuffer[i];
+        else if(i + 1 < _recvbuffer.size() && _recvbuffer[i] == '\r' && _recvbuffer[i+1] == '\n') sep = "\r\n";
+        else return 0;
+        std::string tmp(_recvbuffer.begin(),_recvbuffer.end());
+        size_t n = tmp.find("Content-Length: ");
+        if(n == std::string::npos) return 0;
+        size_t m = tmp.find(sep,n);
+        if(m == std::string::npos) return 0;
+        n += strlen("Content-Length: ");
+        int size = atoi(tmp.substr(n,m-n).c_str());
+        while(n != m)
+        {
+            if(m + sep.size() < tmp.size())
+            {
+                m += sep.size();
+                n = m;
+                m = tmp.find(sep,n);
+                if(m == std::string::npos) return 0;
+            }
+            else return 0;
+        }
+        if(m + sep.size() + size <= _recvbuffer.size()) return m + sep.size() + size;
+        else return 0;
     }
     void handle()
     {
