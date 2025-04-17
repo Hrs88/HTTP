@@ -2,16 +2,11 @@
 #include<string>
 #include<vector>
 #include<unordered_map>
-class response
-{
-public:
-    std::string _rp_head_line;
-    std::vector<std::string> _rp_header;
-    std::vector<char> _rp_body;
-};
 class request
 {
 public:
+    request(std::string& sig) {}
+private:
     //原始数据
     std::string _rq_head_line;
     std::vector<std::string> _rq_header;
