@@ -225,7 +225,7 @@ public:
     void receiver(connection& con)
     {
         con._readtobuff();
-        if(con.iscomplete()&&issafe(con.getfd()))   
+        if(issafe(con.getfd()))   
         {
             _ptp->push_task(&con);
         }

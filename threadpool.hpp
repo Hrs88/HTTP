@@ -85,9 +85,11 @@ private:
         while(true)
         {
             connection& con = _tp->pop_task();
-            con.handle();
-            con._sendtoclient();
-            _log(INFO,__FILE__,__LINE__,"finish a task.");
+            if(con.handle())
+            {
+                con._sendtoclient();
+                _log(INFO,__FILE__,__LINE__,"finish a task.");
+            }
         }
     }
 };

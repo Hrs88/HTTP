@@ -1,22 +1,24 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <functional>
-#include <string>
-#include <unordered_set>
-#include <cstdlib>
-#include <cstring>
-#include <sys/epoll.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <strings.h>
-#include <pthread.h>
+#include<iostream>
+#include<vector>
+#include<functional>
+#include<string>
+#include<unordered_set>
+#include<cstdlib>
+#include<cstring>
+#include<sys/epoll.h>
+#include<sys/types.h>
+#include<sys/socket.h>
+#include<strings.h>
+#include<pthread.h>
+#include"protocol.hpp"
 class connection;
 using fun_t = std::function<void(connection &)>;
 const size_t default_send = 128;
 const size_t default_recv = 128;
 const unsigned int default_inevent = (EPOLLIN | EPOLLET);
 const unsigned int default_outevent = (EPOLLOUT | EPOLLET);
+const std::string CL = "Content-Length: ";
 class connection;
 std::unordered_set<connection *> safe_code; // 安全队列，确保执行流不会对已关闭连接进行操作
 pthread_mutex_t _safe_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -133,26 +135,28 @@ public:
         else
             return 0;
     }
-    void handle()
+    bool handle()
     {
         size_t size = 0;
-        std::vector<char> sig;
+        std::string sig;
         lock();
         if (size = iscomplete())
         {
-            sig = std::vector<char>(_recvbuffer.begin(), _recvbuffer.begin() + size);
+            sig = std::string(_recvbuffer.begin(), _recvbuffer.begin() + size);
             _recvbuffer.erase(_recvbuffer.begin(), _recvbuffer.begin() + size);
         }
         else
         {
             unlock();
-            return;
+            return false;
         }
         unlock();
-        // 处理单个报文
+        request rq(sig,_sep);
+        std::string rp = rq.response();
         lock();
-        // 将响应导入sendbuffer
+        for(auto e : rp) _sendbuffer.push_back(e);
         unlock();
+        return true;
     }
     void _sendtoclient()
     {
