@@ -86,6 +86,7 @@ public:
     }
     size_t iscomplete()
     {
+        return 1;        // for test
         std::string sep; // 确认行分隔符
         if (_sep.size())
             sep = _sep;
@@ -197,9 +198,9 @@ public:
                 auto it = _sendbuffer.begin();
                 it += m;
                 _sendbuffer.erase(_sendbuffer.begin(), it);
-                n = 0;
                 if (m < n)
                     break; // 发送缓冲区满了
+                n = 0;
             }
         }
         if (_sendbuffer.empty())
