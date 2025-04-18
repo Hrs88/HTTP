@@ -146,9 +146,10 @@ public:
         }
         unlock();
         request rq(sig,_sep);
-        std::string rp = rq.response();
+        std::pair<std::string,std::vector<char>> rp = rq.response();
         lock();
-        for(auto e : rp) _sendbuffer.push_back(e);
+        for(auto e : rp.first) _sendbuffer.push_back(e);
+        for(auto e : rp.second) _sendbuffer.push_back(e);
         unlock();
         return true;
     }

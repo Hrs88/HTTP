@@ -1,5 +1,6 @@
 #pragma once
 #include<sstream>
+#include<utility>
 #include<string>
 #include<vector>
 #include<unordered_map>
@@ -12,9 +13,9 @@ public:
         get(sig,sep);
         parse();
     }
-    std::string response()
+    std::pair<std::string,std::vector<char>> response()
     {
-        return "HTTP/1.0 200 OK\r\n\r\n";
+        return std::make_pair(std::string("HTTP/1.0 200 OK\r\n\r\n"),std::vector<char>());
     }
 private:
     //原始数据
