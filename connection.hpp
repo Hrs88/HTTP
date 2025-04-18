@@ -86,7 +86,6 @@ public:
     }
     size_t iscomplete()
     {
-        return 1;        // for test
         std::string sep; // 确认行分隔符
         if (_sep.size())
             sep = _sep;
@@ -110,31 +109,25 @@ public:
             _sep = sep;
         }
         std::string tmp(_recvbuffer.begin(), _recvbuffer.end());
-        size_t n = tmp.find("Content-Length: ");
-        if (n == std::string::npos)
-            return 0;
-        size_t m = tmp.find(sep, n);
-        if (m == std::string::npos)
-            return 0;
-        n += strlen("Content-Length: ");
-        int size = atoi(tmp.substr(n, m - n).c_str());
-        while (n != m)
+        std::string method = tmp.substr(0,tmp.find(" "));
+        size_t left = 0;
+        size_t right = tmp.find(sep);
+        while(left != right)
         {
-            if (m + sep.size() < tmp.size())
-            {
-                m += sep.size();
-                n = m;
-                m = tmp.find(sep, n);
-                if (m == std::string::npos)
-                    return 0;
-            }
-            else
-                return 0;
+            left = right + sep.size();
+            right = left;
+            right = tmp.find(sep,left);
+            if(right == std::string::npos) return 0;
         }
-        if (m + sep.size() + size <= _recvbuffer.size())
-            return m + sep.size() + size;
-        else
-            return 0;
+        size_t size = right + sep.size();
+        size_t len = 0;
+        if(method == "GET" || method == "POST" && tmp.find(CL) > size) return size;
+        else if(method == "POST" && ((len = tmp.find(CL)) < size))
+        {
+            len += CL.size();
+            return size + atoi(tmp.substr(len,tmp.find(sep,len)).c_str());
+        }
+        else return 0;
     }
     bool handle()
     {
