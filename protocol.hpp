@@ -4,7 +4,15 @@
 #include<string>
 #include<vector>
 #include<unordered_map>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<unistd.h>
+const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
+static const std::string web = "./web";
+static const std::string linux_sep = "\r\n";
+static const std::string not_found = web + "/404.html";
 class request
 {
 public:
@@ -15,7 +23,31 @@ public:
     }
     std::pair<std::string,std::vector<char>> response()
     {
-        return std::make_pair(std::string("HTTP/1.0 200 OK\r\n\r\n"),std::vector<char>());
+        std::string __header;
+        std::vector<char> __body;
+        std::string path;
+        if(_uri == "/") path = web + _uri + "index.html";
+        else path = web + _uri;
+        std::string rp_head_line;
+        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+        int fd = open(path.c_str(),O_RDONLY);
+        if(fd < 0)
+        {
+            fd = open(not_found.c_str(),O_RDONLY);
+            rp_head_line = "HTTP/1.0 404 Not Found" + linux_sep;
+        }
+        else rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
+        char rdbuff[default_rdbuff_size] = {0};
+        ssize_t n = read(fd,rdbuff,sizeof(rdbuff));
+        while(n)
+        {
+            for(size_t i = 0;i < n;++i) __body.push_back(rdbuff[i]);
+            n = read(fd,rdbuff,sizeof(rdbuff));
+        }
+        rp_header += "Content-Length: " + std::to_string(__body.size()) + linux_sep;
+        __header += rp_head_line + rp_header + linux_sep;
+        close(fd);
+        return std::make_pair(__header,__body);
     }
 private:
     //原始数据
