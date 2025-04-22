@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>表白墙</title>
+    <style>
+        .box {
+            border: 1px black solid;
+            width: 500px;
+            height:500px;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+        }
+        .box div {
+            display: flex;
+            justify-content: center;
+        }
+        table {
+            width: 400px;
+            height: 300px;
+            box-sizing: border-box;
+        }
+        .right {
+            width: 240px;
+        }
+        .left {
+            width: 160px;
+            padding-left:10%;
+        }
+        .sub {
+            width: 100%;
+            height: 100%;
+            background-color: orange;
+        }
+        .sub:active {
+            background-color: gray;
+        }
+        input {
+            width: 100%;
+            height: 50%;
+        }
+        label {
+            font-size: 150%;
+        }
+        p {
+            color: gray;
+            line-height: 63px;
+        }
+        .title {
+            box-sizing: border-box;
+            margin-top: 30px;
+            padding-top: 20px;
+        }
+        * {
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="title"><h1>表白墙</h1></div><br>
+        <div><p>输入相关信息提交即可</p></div>
+        <div>
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="left"><label for="who">谁：</label></td>
+                        <td class="right"><input type="text" id="who"></td>
+                    </tr>
+                    <tr>
+                        <td class="left"><label for="towho">给谁：</label></td>
+                        <td class="right"><input type="text" id="towho"></td>
+                    </tr>
+                    <tr>
+                        <td class="left"><label for="what">说什么：</label></td>
+                        <td class="right"><input type="text" id="what"></td>
+                    </tr>
+                    <tr><td colspan="2"><input type="button" value="提交" class="sub" onclick="sub()"></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+<script>
+    let box = document.querySelector('.box')
+    let who = document.querySelector('#who')
+    let towho = document.querySelector('#towho')
+    let what = document.querySelector('#what')
+    let node = document.createElement('div')
+    function sub() 
+    {
+        node.innerHTML = who.value + "向" + towho.value + "说：" + what.value
+        box.appendChild(node)
+    }
+</script>
+</html>

@@ -1,5 +1,5 @@
-server:main.cc
+serverd:main.cc
 	@g++ -o $@ $^ -std=c++11 -lpthread
 clean:
-	@rm server
+	@rm serverd
 	@rm logs/*
