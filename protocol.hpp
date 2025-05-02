@@ -12,7 +12,7 @@ const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
 static const std::string web = "./web";
 static const std::string linux_sep = "\r\n";
-static const std::string not_found = web + "/404.html";
+static const std::string not_found = web + "/errors/404.html";
 class request
 {
 public:
@@ -30,16 +30,17 @@ public:
             {
                 //不带参
                 std::string page_path = web + _uri;
-                if(_uri == "/") page_path += "index.html";
-                return page_static(page_path);
+                if(page_path[page_path.size()-1] == '/') page_path += "index.html";
+                return page_get(page_path);
             }
             else
             {
                 //带参
                 std::unordered_map<std::string,std::string> arguments;
                 std::string page_path = _uri.substr(0,arg_pos);
+                if(page_path[page_path.size()-1] == '/') page_path += "index.html";
                 get_arguments(arguments,_uri.substr(arg_pos+1));
-                return page404();
+                return page_get(page_path);
             }
         }
         else if(_method == "POST")
@@ -97,17 +98,35 @@ private:
         rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
         return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
     }
-    std::pair<std::string,std::vector<char>> page_static(std::string& page_path)
+    std::pair<std::string,std::vector<char>> page_get(std::string& page_path)
     {
         int fd = open(page_path.c_str(),O_RDONLY);
         if(fd < 0) return page404();                //页面不存在
-        std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
-        std::vector<char> rp_body;
-        get_rp_body(fd,rp_body);
-        close(fd);
-        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
-        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+        struct stat file_attribute;
+        int n = fstat(fd,&file_attribute);
+        if(n == 0) _log(INFO,__FILE__,__LINE__,"scan the file success.");       //获取文件属性成功
+        else 
+        {
+            _log(ERROR,__FILE__,__LINE__,"scan the file fail.");              //获取文件属性失败
+            return page404();
+        }
+        if(S_ISREG(file_attribute.st_mode))                                                     //文件是普通文件
+        {
+            _log(INFO,__FILE__,__LINE__,"the file is a normal file or web page.");
+            std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
+            std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+            std::vector<char> rp_body;
+            get_rp_body(fd,rp_body);
+            close(fd);
+            rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
+            return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+        }
+        else                                                                                    //文件不是普通文件，防止打开目录
+        {
+            _log(WARNING,__FILE__,__LINE__,"the file is not a normal file.");
+            close(fd);
+            return page404();
+        }
     }
     void get_rp_body(int fd,std::vector<char>& rp_body)
     {
@@ -128,18 +147,23 @@ private:
         while(pos < argument.size())
         {
             sep = argument.find("=",pos);
+            if(sep == std::string::npos)
+            {
+                _log(WARNING,__FILE__,__LINE__,"bad argument.");
+                return;
+            }
             key = argument.substr(pos,sep-pos);             //提取key
             pos = ++sep;
             sep = argument.find("&",pos);
-            if(sep != std::string::npos)
+            if(sep != std::string::npos)                    //非最后一个参数
             {
-                value = argument.substr(pos,sep-pos);
+                value = argument.substr(pos,sep-pos);       //提取value
                 arguments[key] = value;
                 pos = ++sep;
             }
-            else 
+            else                                            //最后一个参数
             {
-                value = argument.substr(pos);
+                value = argument.substr(pos);               //提取value
                 arguments[key] = value;
                 break;
             }
