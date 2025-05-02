@@ -25,8 +25,8 @@ public:
     {
         if(_method == "GET")
         {
-            size_t argument = _uri.find("?");
-            if(argument == std::string::npos)
+            size_t arg_pos = _uri.find("?");
+            if(arg_pos == std::string::npos)
             {
                 //不带参
                 std::string page_path = web + _uri;
@@ -36,6 +36,9 @@ public:
             else
             {
                 //带参
+                std::unordered_map<std::string,std::string> arguments;
+                std::string page_path = _uri.substr(0,arg_pos);
+                get_arguments(arguments,_uri.substr(arg_pos+1));
                 return page404();
             }
         }
@@ -114,6 +117,32 @@ private:
         {
             for(size_t i = 0;i < n;++i) rp_body.push_back(rdbuff[i]);
             n = read(fd,rdbuff,sizeof(rdbuff));
+        }
+    }
+    void get_arguments(std::unordered_map<std::string,std::string>& arguments,const std::string& argument)
+    {
+        size_t pos = 0;
+        size_t sep = 0;
+        std::string key;
+        std::string value;
+        while(pos < argument.size())
+        {
+            sep = argument.find("=",pos);
+            key = argument.substr(pos,sep-pos);             //提取key
+            pos = ++sep;
+            sep = argument.find("&",pos);
+            if(sep != std::string::npos)
+            {
+                value = argument.substr(pos,sep-pos);
+                arguments[key] = value;
+                pos = ++sep;
+            }
+            else 
+            {
+                value = argument.substr(pos);
+                arguments[key] = value;
+                break;
+            }
         }
     }
 };
