@@ -3,6 +3,7 @@
 #include<utility>
 #include<string>
 #include<vector>
+#include<algorithm>
 #include<unordered_map>
 #include<sys/types.h>
 #include<sys/stat.h>
@@ -26,23 +27,9 @@ public:
     {
         if(_method == "GET")
         {
-            size_t arg_pos = _uri.find("?");
-            if(arg_pos == std::string::npos)
-            {
-                //不带参
-                std::string page_path = web + _uri;
-                if(page_path[page_path.size()-1] == '/') page_path += "index.html";
-                return page_get(page_path);
-            }
-            else
-            {
-                //带参
-                std::unordered_map<std::string,std::string> arguments;
-                std::string page_path = _uri.substr(0,arg_pos);
-                if(page_path[page_path.size()-1] == '/') page_path += "index.html";
-                get_arguments(arguments,_uri.substr(arg_pos+1));
-                return page_get(page_path);
-            }
+            std::string page_path = web + _uri;
+            if(page_path[page_path.size()-1] == '/') page_path += "index.html";
+            return page_get(page_path);
         }
         else if(_method == "POST")
         {
@@ -58,6 +45,7 @@ private:
     //处理后的数据
     std::string _method;
     std::string _uri;
+    std::string _arguments;
     std::string _version;
     std::unordered_map<std::string,std::string> _header;
     void get(const std::string& sig,const std::string sep)
@@ -87,6 +75,13 @@ private:
             pos = e.find(http_sep);
             _header[e.substr(0,pos)] = e.substr(pos+http_sep.size());
         }
+        std::transform(_method.begin(),_method.end(),_method.begin(),toupper);          //防止类似"Get"/"Post"的不规范报头出现
+        size_t pos = _uri.find("?");                                                    //判断是否带参，若带参则分离，利好CGI
+        if(pos != std::string::npos)
+        {
+            _arguments = _uri.substr(pos+1);
+            _uri = _uri.substr(0,pos);
+        }
     }
     std::pair<std::string,std::vector<char>> page404()
     {
@@ -113,14 +108,22 @@ private:
         }
         if(S_ISREG(file_attribute.st_mode))                                                     //文件是普通文件
         {
-            _log(INFO,__FILE__,__LINE__,"the file is a normal file or web page.");
-            std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-            std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
-            std::vector<char> rp_body;
-            get_rp_body(fd,rp_body);
-            close(fd);
-            rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
-            return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+            if(file_attribute.st_mode & S_IXUSR || file_attribute.st_mode & S_IXGRP || file_attribute.st_mode & S_IXOTH)        //文件为可执行文件需要特殊处理
+            {
+                close(fd);
+                return CGI_solve(page_path);                                                    //CGI处理数据  结果数据 + 报头构建
+            }
+            else
+            {
+                _log(INFO,__FILE__,__LINE__,"the file is a normal file or web page.");
+                std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
+                std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+                std::vector<char> rp_body;
+                get_rp_body(fd,rp_body);
+                close(fd);
+                rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
+                return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+            }
         }
         else if(S_ISDIR(file_attribute.st_mode))                                                //文件是目录文件
         {
@@ -146,35 +149,8 @@ private:
             n = read(fd,rdbuff,sizeof(rdbuff));
         }
     }
-    void get_arguments(std::unordered_map<std::string,std::string>& arguments,const std::string& argument)
+    std::pair<std::string,std::vector<char>> CGI_solve(std::string& exe_path)
     {
-        size_t pos = 0;
-        size_t sep = 0;
-        std::string key;
-        std::string value;
-        while(pos < argument.size())
-        {
-            sep = argument.find("=",pos);
-            if(sep == std::string::npos)
-            {
-                _log(WARNING,__FILE__,__LINE__,"bad argument.");
-                return;
-            }
-            key = argument.substr(pos,sep-pos);             //提取key
-            pos = ++sep;
-            sep = argument.find("&",pos);
-            if(sep != std::string::npos)                    //非最后一个参数
-            {
-                value = argument.substr(pos,sep-pos);       //提取value
-                arguments[key] = value;
-                pos = ++sep;
-            }
-            else                                            //最后一个参数
-            {
-                value = argument.substr(pos);               //提取value
-                arguments[key] = value;
-                break;
-            }
-        }
+        return page404();
     }
 };
