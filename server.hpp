@@ -21,7 +21,7 @@ enum{
     EPOLL_ERR,
     LIS_NONBLOCK_ERR,
 };
-const uint16_t default_port = 65535;
+const uint16_t default_port = 80;
 const int default_backlog = 5;
 const int default_timeout = -1;
 const int occur_num = 32;
