@@ -76,7 +76,7 @@ private:
             _header[e.substr(0,pos)] = e.substr(pos+http_sep.size());
         }
         std::transform(_method.begin(),_method.end(),_method.begin(),toupper);          //防止类似"Get"/"Post"的不规范报头出现
-        size_t pos = _uri.find("?");                                                    //判断是否带参，若带参则分离，利好CGI
+        pos = _uri.find("?");                                                           //判断是否带参，若带参则分离，利好CGI
         if(pos != std::string::npos)
         {
             _arguments = _uri.substr(pos+1);
