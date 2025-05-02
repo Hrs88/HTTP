@@ -8,6 +8,7 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<unistd.h>
+#include"log.hpp"
 const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
 static const std::string web = "./web";
@@ -107,7 +108,7 @@ private:
         if(n == 0) _log(INFO,__FILE__,__LINE__,"scan the file success.");       //获取文件属性成功
         else 
         {
-            _log(ERROR,__FILE__,__LINE__,"scan the file fail.");              //获取文件属性失败
+            _log(ERROR,__FILE__,__LINE__,"scan the file fail.");                //获取文件属性失败
             return page404();
         }
         if(S_ISREG(file_attribute.st_mode))                                                     //文件是普通文件
@@ -121,7 +122,14 @@ private:
             rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
             return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
         }
-        else                                                                                    //文件不是普通文件，防止打开目录
+        else if(S_ISDIR(file_attribute.st_mode))                                                //文件是目录文件
+        {
+            close(fd);
+            _log(WARNING,__FILE__,__LINE__,"the file is a directory.");
+            std::string real_path = page_path + "/index.html";
+            return page_get(real_path);
+        }
+        else                                                                                    //文件不是普通文件，也不是目录文件
         {
             _log(WARNING,__FILE__,__LINE__,"the file is not a normal file.");
             close(fd);
