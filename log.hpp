@@ -9,6 +9,7 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<pthread.h>
+const int file_right = 0666;
 enum{
     INFO,
     WARNING,
@@ -37,15 +38,18 @@ public:
     {
         if(c_mode == SIG_FILE)
         {
-            _file_fd = open("logs/log.txt",O_WRONLY|O_TRUNC|O_CREAT,0600);
+            if(_file_fd < 0) _file_fd = open("logs/log.txt",O_WRONLY|O_TRUNC|O_CREAT,file_right);
             _mode = c_mode;
         }
         else if(c_mode == MULTI_FILE)
         {
-            _files_fd.push_back(open("logs/info_log.txt",O_WRONLY|O_TRUNC|O_CREAT,0600));
-            _files_fd.push_back(open("logs/warning_log.txt",O_WRONLY|O_TRUNC|O_CREAT,0600));
-            _files_fd.push_back(open("logs/error_log.txt",O_WRONLY|O_TRUNC|O_CREAT,0600));
-            _files_fd.push_back(open("logs/fatal_log.txt",O_WRONLY|O_TRUNC|O_CREAT,0600));
+            if(_files_fd.empty())
+            {
+                _files_fd.push_back(open("logs/info_log.txt",O_WRONLY|O_TRUNC|O_CREAT,file_right));
+                _files_fd.push_back(open("logs/warning_log.txt",O_WRONLY|O_TRUNC|O_CREAT,file_right));
+                _files_fd.push_back(open("logs/error_log.txt",O_WRONLY|O_TRUNC|O_CREAT,file_right));
+                _files_fd.push_back(open("logs/fatal_log.txt",O_WRONLY|O_TRUNC|O_CREAT,file_right));
+            }
             _mode = c_mode;
         }
         else if(c_mode == STD) _mode = c_mode;
