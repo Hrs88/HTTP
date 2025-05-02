@@ -23,31 +23,27 @@ public:
     }
     std::pair<std::string,std::vector<char>> response()
     {
-        std::string __header;
-        std::vector<char> __body;
-        std::string path;
-        if(_uri == "/") path = web + _uri + "index.html";
-        else path = web + _uri;
-        std::string rp_head_line;
-        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
-        int fd = open(path.c_str(),O_RDONLY);
-        if(fd < 0)
+        if(_method == "GET")
         {
-            fd = open(not_found.c_str(),O_RDONLY);
-            rp_head_line = "HTTP/1.0 404 Not Found" + linux_sep;
+            size_t argument = _uri.find("?");
+            if(argument == std::string::npos)
+            {
+                //不带参
+                std::string page_path = web + _uri;
+                if(_uri == "/") page_path += "index.html";
+                return page_static(page_path);
+            }
+            else
+            {
+                //带参
+                return page404();
+            }
         }
-        else rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-        char rdbuff[default_rdbuff_size] = {0};
-        ssize_t n = read(fd,rdbuff,sizeof(rdbuff));
-        while(n)
+        else if(_method == "POST")
         {
-            for(size_t i = 0;i < n;++i) __body.push_back(rdbuff[i]);
-            n = read(fd,rdbuff,sizeof(rdbuff));
+            return page404();       //暂不处理
         }
-        rp_header += "Content-Length: " + std::to_string(__body.size()) + linux_sep;
-        __header += rp_head_line + rp_header + linux_sep;
-        close(fd);
-        return std::make_pair(__header,__body);
+        else return page404();      //不处理
     }
 private:
     //原始数据
@@ -85,6 +81,39 @@ private:
         {
             pos = e.find(http_sep);
             _header[e.substr(0,pos)] = e.substr(pos+http_sep.size());
+        }
+    }
+    std::pair<std::string,std::vector<char>> page404()
+    {
+        std::string rp_head_line = "HTTP/1.0 404 Not Found" + linux_sep;
+        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+        std::vector<char> rp_body;
+        int fd = open(not_found.c_str(),O_RDONLY);
+        get_rp_body(fd,rp_body);
+        close(fd);
+        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
+        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+    }
+    std::pair<std::string,std::vector<char>> page_static(std::string& page_path)
+    {
+        int fd = open(page_path.c_str(),O_RDONLY);
+        if(fd < 0) return page404();                //页面不存在
+        std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
+        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+        std::vector<char> rp_body;
+        get_rp_body(fd,rp_body);
+        close(fd);
+        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
+        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+    }
+    void get_rp_body(int fd,std::vector<char>& rp_body)
+    {
+        char rdbuff[default_rdbuff_size] = {0};
+        int n = read(fd,rdbuff,sizeof(rdbuff));
+        while(n)
+        {
+            for(size_t i = 0;i < n;++i) rp_body.push_back(rdbuff[i]);
+            n = read(fd,rdbuff,sizeof(rdbuff));
         }
     }
 };

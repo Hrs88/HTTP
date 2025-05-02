@@ -134,17 +134,6 @@ public:
         _log(INFO,__FILE__,__LINE__,"server start loop.");
         while(_run)
         {
-            // struct sockaddr_in peer;
-            // socklen_t len = sizeof(peer);
-            // int iofd = accept(_listen_socket,(struct sockaddr*)&peer,&len);
-            // if(iofd < 0)
-            // {
-            //     //log
-            //     continue;
-            // }
-            // std::cout << "get a new link!" << std::endl;
-            // sleep(5);
-            // close(iofd);
             int n = epoll_wait(_epfd,_occur,sizeof(_occur)/sizeof(_occur[0]),default_timeout);
             for(size_t i = 0;i < n;++i)
             {
