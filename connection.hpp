@@ -131,6 +131,7 @@ public:
     }
     bool handle()
     {
+        if(!_sendbuffer.empty()) return true;                                   //由于缓冲区满了发不出去的报文二次发送
         size_t size = 0;
         std::string sig;
         lock();
