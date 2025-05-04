@@ -115,7 +115,7 @@ public:
             _log(ERROR,__FILE__,__LINE__,"set listen_socket nonblock error.");
             exit(LIS_NONBLOCK_ERR);
         }
-        _log(INFO,__FILE__,__LINE__,"set listen_socket nonblock success.");
+        _log(INFO,__FILE__,__LINE__,"set listen_socket:%d nonblock success.",_listen_socket);
         epoll_data_t listen_data;
         listen_data.fd = _listen_socket;
         struct epoll_event listen_event = {default_inevent,listen_data};
@@ -141,15 +141,21 @@ public:
                 int fd = _occur[i].data.fd;
                 if(events&EPOLLHUP || events&EPOLLERR)
                 {
-                    events |= (EPOLLIN|EPOLLOUT);
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a error event.");
+                    get_safe_lock();
+                    if(safe_code.count(_connects[fd])) _connects[fd]->_except_cb(*_connects[fd]);
+                    put_safe_lock();
+                    continue;
                 }
                 if(events&EPOLLIN)
                 {
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a read event.");
                     if(_connects[fd]->_recv_cb)
                         _connects[fd]->_recv_cb(*_connects[fd]);
                 }
                 if(events&EPOLLOUT)
                 {
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a write event.");
                     if(_connects[fd]->_send_cb)
                         _connects[fd]->_send_cb(*_connects[fd]);
                 }
@@ -223,10 +229,10 @@ public:
     {
         safe_code.erase(&con);
         int fd = con.getfd();
-        epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
-        close(fd);
-        delete &con;
         _connects.erase(fd);
+        close(fd);
+        epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
+        delete &con;
         _log(INFO,__FILE__,__LINE__,"delete a link: %d",fd);
     }
     bool issafe(int fd)

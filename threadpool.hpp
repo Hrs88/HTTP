@@ -36,7 +36,6 @@ public:
     }
     void init()
     {
-        signal(SIGSEGV,_kill_by_SIGSEGV);
         pthread_mutex_init(&_lock,nullptr);
         pthread_cond_init(&_c_cond,nullptr);
         pthread_cond_init(&_p_cond,nullptr);
@@ -45,6 +44,7 @@ public:
             pthread_t tid;
             pthread_create(&tid,nullptr,_task,nullptr);
             pthread_detach(tid);
+            _threads.push_back(tid);
         }
         _log(INFO,__FILE__,__LINE__,"the %d threads in threadpool is created successfully.",_thread_num);
     }
@@ -70,6 +70,7 @@ public:
         return *next_task;
     }
 private:
+    std::vector<pthread_t> _threads;
     std::queue<connection*> _tasks; 
     pthread_mutex_t _lock;
     pthread_cond_t _c_cond;
@@ -91,14 +92,6 @@ private:
                 _log(INFO,__FILE__,__LINE__,"finish a task.");
             }
         }
-    }
-    static void _kill_by_SIGSEGV(int)
-    {
-        pthread_t pid;
-        pthread_create(&pid,nullptr,_task,nullptr);
-        pthread_detach(pid);
-        _log(ERROR,__FILE__,__LINE__,"Segmentation fault!");
-        pthread_exit(nullptr);
     }
 };
 threadpool* threadpool::_tp = nullptr;
