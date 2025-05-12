@@ -17,6 +17,7 @@ public:
     void c_wait() {pthread_cond_wait(&_c_cond,&_lock);}     //进入消费者队列
     void p_wake() {pthread_cond_signal(&_p_cond);}          //唤醒一个生产者
     void c_wake() {pthread_cond_signal(&_c_cond);}          //唤醒一个消费者
+    bool is_member(pthread_t tid) {return _threads.count(tid);}
     ~threadpool() 
     {
         pthread_mutex_destroy(&_lock);
@@ -44,7 +45,7 @@ public:
             pthread_t tid;
             pthread_create(&tid,nullptr,_task,nullptr);
             pthread_detach(tid);
-            _threads.push_back(tid);
+            _threads.insert(tid);
         }
         _log(INFO,__FILE__,__LINE__,"the %d threads in threadpool is created successfully.",_thread_num);
     }
@@ -70,7 +71,7 @@ public:
         return *next_task;
     }
 private:
-    std::vector<pthread_t> _threads;
+    std::unordered_set<pthread_t> _threads;
     std::queue<connection*> _tasks; 
     pthread_mutex_t _lock;
     pthread_cond_t _c_cond;

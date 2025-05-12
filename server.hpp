@@ -142,10 +142,7 @@ public:
                 if(events&EPOLLHUP || events&EPOLLERR)
                 {
                     _log(INFO,__FILE__,__LINE__,"%d fd has a error event.",fd);
-                    get_safe_lock();
-                    if(safe_code.count(_connects[fd])) _connects[fd]->_except_cb(*_connects[fd]);
-                    put_safe_lock();
-                    continue;
+                    events |= default_inevent;
                 }
                 if(events&EPOLLIN)
                 {
@@ -153,7 +150,7 @@ public:
                     if(_connects[fd]->_recv_cb)
                         _connects[fd]->_recv_cb(*_connects[fd]);
                 }
-                if(events&EPOLLOUT)
+                else if(events&EPOLLOUT)
                 {
                     _log(INFO,__FILE__,__LINE__,"%d fd has a write event.",fd);
                     if(_connects[fd]->_send_cb)
@@ -216,10 +213,12 @@ public:
     }
     void sender(connection& con)
     {
+        epoll_ctl(_epfd,EPOLL_CTL_DEL,con.getfd(),nullptr);
         _ptp->push_task(&con);
     }
     void receiver(connection& con)
     {
+        epoll_ctl(_epfd,EPOLL_CTL_DEL,con.getfd(),nullptr);
         con._readtobuff();
         if(issafe(con.getfd()))   
         {
@@ -232,7 +231,6 @@ public:
         int fd = con.getfd();
         _connects.erase(fd);
         close(fd);
-        epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
         delete &con;
         _log(INFO,__FILE__,__LINE__,"delete a link: %d",fd);
     }

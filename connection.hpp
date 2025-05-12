@@ -143,6 +143,10 @@ public:
         else
         {
             unlock();
+            epoll_data_t roll_back;
+            roll_back.fd = _fd;
+            struct epoll_event roll_back_to_read = {default_inevent,roll_back};
+            epoll_ctl(__epfd,EPOLL_CTL_ADD,_fd,&roll_back_to_read);                 //报文不完整，回滚接收数据
             return false;
         }
         unlock();
@@ -200,11 +204,8 @@ public:
         }
         if (_sendbuffer.empty())
         {
-            // 关闭写关心
-            epoll_data_t mod_data;
-            mod_data.fd = _fd;
-            struct epoll_event mod_event = {default_inevent, mod_data};
-            epoll_ctl(__epfd, EPOLL_CTL_MOD, _fd, &mod_event);
+            // 无需关闭写关心
+            unlock();
             get_safe_lock();
             if (safe_code.count(this))
                 _except_cb(*this); // 单次响应结束，关闭连接
@@ -215,10 +216,10 @@ public:
             // 开启写关心
             epoll_data_t mod_data;
             mod_data.fd = _fd;
-            struct epoll_event mod_event = {(default_inevent | default_outevent), mod_data};
-            epoll_ctl(__epfd, EPOLL_CTL_MOD, _fd, &mod_event);
+            struct epoll_event mod_event = {default_outevent, mod_data};
+            epoll_ctl(__epfd, EPOLL_CTL_ADD, _fd, &mod_event);
+            unlock();
         }
-        unlock();
     }
 
 private:
