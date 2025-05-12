@@ -141,7 +141,7 @@ public:
                 int fd = _occur[i].data.fd;
                 if(events&EPOLLHUP || events&EPOLLERR)
                 {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a error event.");
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a error event.",fd);
                     get_safe_lock();
                     if(safe_code.count(_connects[fd])) _connects[fd]->_except_cb(*_connects[fd]);
                     put_safe_lock();
@@ -192,10 +192,11 @@ public:
             if(ret)
             {
                 _ip += ip;
+                _log(INFO,__FILE__,__LINE__,"IP transform success.");
             }
             else
             {
-                //log IP转换失败
+                _log(WARNING,__FILE__,__LINE__,"IP transform error.");
             }
             connection* link = new connection(iofd,_epfd,std::bind(&httpsvr::receiver,this,std::placeholders::_1),
                                                 std::bind(&httpsvr::sender,this,std::placeholders::_1),
