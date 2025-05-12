@@ -149,13 +149,13 @@ public:
                 }
                 if(events&EPOLLIN)
                 {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a read event.");
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a read event.",fd);
                     if(_connects[fd]->_recv_cb)
                         _connects[fd]->_recv_cb(*_connects[fd]);
                 }
                 if(events&EPOLLOUT)
                 {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a write event.");
+                    _log(INFO,__FILE__,__LINE__,"%d fd has a write event.",fd);
                     if(_connects[fd]->_send_cb)
                         _connects[fd]->_send_cb(*_connects[fd]);
                 }

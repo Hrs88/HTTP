@@ -4,6 +4,7 @@ void* start_loop(void* svr_pointer)
 {
     httpsvr& svr = *((httpsvr*)svr_pointer);
     svr.loop();
+    return nullptr;
 }
 int main(int argc,char* argv[])
 {
