@@ -139,7 +139,7 @@ public:
             {
                 unsigned int events = _occur[i].events;
                 int fd = _occur[i].data.fd;
-                epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
+                if(fd != _listen_socket) epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
                 if(events&EPOLLHUP || events&EPOLLERR)
                 {
                     _log(INFO,__FILE__,__LINE__,"%d fd has a error event.",fd);
