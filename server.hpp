@@ -25,6 +25,8 @@ const uint16_t default_port = 80;
 const int default_backlog = 5;
 const int default_timeout = -1;
 const int occur_num = 32;
+const int default_fixed_time = 3600;
+void* timed_disconnection(void*);
 class server
 {
 public:
@@ -89,6 +91,7 @@ class httpsvr final : public server
 {
 public:
     ~httpsvr(){}
+    int get_epoll_fd() {return _epfd;}
     static httpsvr& getinstance(uint16_t port = default_port)
     {
         if(nullptr == _svr)
@@ -122,11 +125,11 @@ public:
         epoll_ctl(_epfd,EPOLL_CTL_ADD,_listen_socket,&listen_event);    //监听套接字加入多路转接
         connection* con = new connection(_listen_socket,_epfd,std::bind(&httpsvr::accepter,this,std::placeholders::_1),nullptr,nullptr);
         _connects.insert(std::make_pair(_listen_socket,con));
-        get_safe_lock();
-        safe_code.insert(con);
-        put_safe_lock();
         bzero((void*)_occur,sizeof(_occur));
         _ptp = threadpool::getinstance();
+        bool ret = create_timed_disconnection();
+        if(ret) _log(INFO,__FILE__,__LINE__,"timed disconnection thread is created.");
+        else _log(ERROR,__FILE__,__LINE__,"timed disconnection has a error.");
     }
     void loop()
     {
@@ -134,8 +137,21 @@ public:
         _log(INFO,__FILE__,__LINE__,"server start loop.");
         while(_run)
         {
+            size_t pre = 0;
+            size_t cur = 0;
             int n = epoll_wait(_epfd,_occur,sizeof(_occur)/sizeof(_occur[0]),default_timeout);
-            for(size_t i = 0;i < n;++i)
+            get_safe_lock();
+            for(cur = 0;cur < n;++cur)
+            {
+                int fd = _occur[cur].data.fd;
+                if(safe_code.count(_connects[fd]) || fd == _listen_socket)
+                {
+                    _connects[fd]->update_last_hit(time(nullptr));
+                    _occur[pre++] = _occur[cur];
+                }
+            }
+            put_safe_lock();
+            for(size_t i = 0;i < pre;++i)
             {
                 unsigned int events = _occur[i].events;
                 int fd = _occur[i].data.fd;
@@ -243,6 +259,17 @@ public:
         if(it != _connects.end()) return true;
         return false;
     }
+    bool create_timed_disconnection()
+    {
+        pthread_t tid;
+        int ret = pthread_create(&tid,nullptr,timed_disconnection,nullptr);
+        if(ret == 0)
+        {
+            pthread_detach(tid);
+            return true;
+        }
+        else return false;
+    }
 private:
     static httpsvr* _svr;
     threadpool* _ptp;
@@ -255,3 +282,25 @@ private:
     httpsvr& operator=(const httpsvr& obj) = delete;
 };
 httpsvr* httpsvr::_svr = nullptr;
+void* timed_disconnection(void*)
+{
+    httpsvr& hsvr = httpsvr::getinstance();
+    while(true)
+    {
+        sleep(default_fixed_time);
+        _log(INFO,__FILE__,__LINE__,"%d s timed disconnection.",default_fixed_time);
+        get_safe_lock();
+        for(auto e : safe_code)
+        {
+            if(time(nullptr) - e->get_last_hit() > default_fixed_time)
+            {
+                int fd = e->getfd();
+                epoll_ctl(hsvr.get_epoll_fd(),EPOLL_CTL_DEL,fd,nullptr);
+                hsvr.excepter(*e);
+                _log(INFO,__FILE__,__LINE__,"%d fd timeout.",fd);
+            }
+        }
+        put_safe_lock();
+    }
+    return nullptr;
+}

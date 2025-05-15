@@ -30,7 +30,8 @@ public:
     fun_t _recv_cb;
     fun_t _send_cb;
     fun_t _except_cb;
-    connection(int fd, int epfd, fun_t recv_cb, fun_t send_cb, fun_t except_cb) : _fd(fd), __epfd(epfd), _recv_cb(recv_cb), _send_cb(send_cb), _except_cb(except_cb), _client_port(0)
+    connection(int fd, int epfd, fun_t recv_cb, fun_t send_cb, fun_t except_cb) 
+        : _fd(fd), __epfd(epfd), _recv_cb(recv_cb), _send_cb(send_cb), _except_cb(except_cb), _client_port(0),_last_hit(time(nullptr))
     {
         pthread_mutex_init(&_lock, nullptr);
     }
@@ -46,6 +47,13 @@ public:
     void lock() { pthread_mutex_lock(&_lock); }
     void unlock() { pthread_mutex_unlock(&_lock); }
     std::string get_sep() {return _sep;}
+    void update_last_hit(time_t t) 
+    {
+        lock();
+        _last_hit = t;
+        unlock();
+    }
+    time_t get_last_hit() {return _last_hit;}
     void _readtobuff()
     {
         char buffer[default_recv];
@@ -231,4 +239,5 @@ private:
     uint16_t _client_port;
     pthread_mutex_t _lock; // 保证同时只有单执行流执行该任务
     std::string _sep;      // 报文行分隔符
+    time_t _last_hit;      // 最近操作
 };

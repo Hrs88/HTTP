@@ -92,6 +92,7 @@ private:
                 con._sendtoclient();
                 _log(INFO,__FILE__,__LINE__,"finish a task.");
             }
+            else _log(INFO,__FILE__,__LINE__,"request is incomplete.");
         }
     }
 };
