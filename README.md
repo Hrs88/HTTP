@@ -8,4 +8,4 @@
 6. 定时清理超时连接
 7. 基于HTTP/1.0协议，采用短连接
 ## 2.在线网站
-[www.fosing.xyz](www.fosing.xyz)
+[www.fosing.xyz](http://www.fosing.xyz)
