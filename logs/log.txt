@@ -1,0 +1,52 @@
+[INFO][2025-05-15 13:47:44][main.cc: 13] pid:121220
+[INFO][2025-05-15 13:47:44][server.hpp: 55] socket success.
+[INFO][2025-05-15 13:47:44][server.hpp: 44] set port reuse successfully.
+[INFO][2025-05-15 13:47:44][server.hpp: 70] bind success.
+[INFO][2025-05-15 13:47:44][server.hpp: 80] listen success.
+[INFO][2025-05-15 13:47:44][server.hpp: 115] epoll create success.
+[INFO][2025-05-15 13:47:44][server.hpp: 121] set listen_socket:4 nonblock success.
+[INFO][2025-05-15 13:47:44][threadpool.hpp: 50] the 5 threads in threadpool is created successfully.
+[INFO][2025-05-15 13:47:44][threadpool.hpp: 34] threadpool is created.
+[INFO][2025-05-15 13:47:44][server.hpp: 131] timed disconnection thread is created.
+[INFO][2025-05-15 13:47:44][server.hpp: 101] httpsvr is created.
+[INFO][2025-05-15 13:47:44][server.hpp: 137] server start loop.
+[INFO][2025-05-15 13:47:57][server.hpp: 170] 4 fd has a read event.
+[INFO][2025-05-15 13:47:57][server.hpp: 213] IP transform success.
+[INFO][2025-05-15 13:47:57][server.hpp: 232] get a new link: 6
+[INFO][2025-05-15 13:47:57][server.hpp: 170] 6 fd has a read event.
+[INFO][2025-05-15 13:47:57][threadpool.hpp: 70] get a task.
+[INFO][2025-05-15 13:47:57][protocol.hpp: 103] scan the file success.
+[INFO][2025-05-15 13:47:57][protocol.hpp: 118] the file is a normal file or web page.
+[INFO][2025-05-15 13:47:57][server.hpp: 254] delete a link: 6
+[INFO][2025-05-15 13:47:57][threadpool.hpp: 93] finish a task.
+[INFO][2025-05-15 13:47:57][threadpool.hpp: 59] push a task.
+[INFO][2025-05-15 13:53:41][server.hpp: 170] 4 fd has a read event.
+[INFO][2025-05-15 13:53:41][server.hpp: 213] IP transform success.
+[INFO][2025-05-15 13:53:41][server.hpp: 232] get a new link: 6
+[INFO][2025-05-15 13:53:41][server.hpp: 170] 6 fd has a read event.
+[INFO][2025-05-15 13:53:41][threadpool.hpp: 70] get a task.
+[INFO][2025-05-15 13:53:41][protocol.hpp: 103] scan the file success.
+[INFO][2025-05-15 13:53:41][protocol.hpp: 118] the file is a normal file or web page.
+[INFO][2025-05-15 13:53:41][server.hpp: 254] delete a link: 6
+[INFO][2025-05-15 13:53:41][threadpool.hpp: 93] finish a task.
+[INFO][2025-05-15 13:53:41][threadpool.hpp: 59] push a task.
+[INFO][2025-05-15 14:00:58][server.hpp: 170] 4 fd has a read event.
+[INFO][2025-05-15 14:00:58][server.hpp: 213] IP transform success.
+[INFO][2025-05-15 14:00:58][server.hpp: 232] get a new link: 6
+[INFO][2025-05-15 14:00:58][server.hpp: 170] 6 fd has a read event.
+[INFO][2025-05-15 14:00:58][threadpool.hpp: 70] get a task.
+[INFO][2025-05-15 14:00:58][protocol.hpp: 103] scan the file success.
+[INFO][2025-05-15 14:00:58][protocol.hpp: 118] the file is a normal file or web page.
+[INFO][2025-05-15 14:00:58][threadpool.hpp: 59] push a task.
+[INFO][2025-05-15 14:00:58][server.hpp: 254] delete a link: 6
+[INFO][2025-05-15 14:00:58][threadpool.hpp: 93] finish a task.
+[INFO][2025-05-15 14:12:56][server.hpp: 170] 4 fd has a read event.
+[INFO][2025-05-15 14:12:56][server.hpp: 213] IP transform success.
+[INFO][2025-05-15 14:12:56][server.hpp: 232] get a new link: 6
+[INFO][2025-05-15 14:12:56][server.hpp: 170] 6 fd has a read event.
+[INFO][2025-05-15 14:12:56][threadpool.hpp: 59] push a task.
+[INFO][2025-05-15 14:12:56][threadpool.hpp: 70] get a task.
+[INFO][2025-05-15 14:12:56][protocol.hpp: 103] scan the file success.
+[INFO][2025-05-15 14:12:56][protocol.hpp: 118] the file is a normal file or web page.
+[INFO][2025-05-15 14:12:56][server.hpp: 254] delete a link: 6
+[INFO][2025-05-15 14:12:56][threadpool.hpp: 93] finish a task.
