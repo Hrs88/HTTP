@@ -15,6 +15,10 @@ static const std::string http_sep = ": ";
 static const std::string web = "./web";
 static const std::string linux_sep = "\r\n";
 static const std::string not_found = web + "/errors/404.html";
+std::unordered_map<std::string,std::string> content_type = {
+    {".html","Content-Type: text/html; charset=UTF-8"},
+    {".jpg","Content-Type: image/jpeg; charset=binary"}
+};
 class request
 {
 public:
@@ -117,7 +121,7 @@ private:
             {
                 _log(INFO,__FILE__,__LINE__,"the file is a normal file or web page.");
                 std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-                std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+                std::string rp_header = content_type[page_path.substr(page_path.rfind("."))] + linux_sep;
                 std::vector<char> rp_body;
                 get_rp_body(fd,rp_body);
                 close(fd);

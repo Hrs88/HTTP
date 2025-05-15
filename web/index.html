@@ -3,58 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>index</title>
+    <title>冬青の个人主页</title>
     <style>
-        .title {
-            color: blue;
-            width: auto;
-            text-align: center;
+        * {
+            margin-left: 0px;
+            margin-right: 0px;
+            margin-top: 0px;
+            padding: 0;
+            margin-bottom: 10px;
         }
-        .tables {
+        body {
             display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 50px;
         }
-        .table {
-            border: 2px blue solid;
-            width: 10%;
-            border-collapse: collapse;
-        }
-        .demos {
-            border: 2px blue solid;
-            height: 30px;
-        }
-        .links {
-            border: 2px blue solid;
-            height: 30px;
-        }
-        .demo {
-            border: 2px blue solid;
+        .sun {
+            color: grey;
+            font-family: NSimSun;
         }
         .link {
-            border: 2px blue solid;
-        }
-        a {
             text-decoration: none;
-            font-style: italic;
+            font-style: normal;
+            color: #48D1CC;
+        }
+        .title {
+            color: #008080;
+            text-decoration: none;
+            font-style: normal;
+            font-size: 25px;
+            font-weight: bolder;
+        }
+        .content {
+            width: 25%;
+        }
+        .brief {
+            width: 20%;
+        }
+        .text {
+            color: rgb(40, 39, 39);
+            line-height: 20px;
+            font-family: STKaiti;
+        }
+        hr {
+            background-color: rgb(136, 136, 136);
+            height: 1px;
+            border: none;
+            width: 120%;
+        }
+        #C_language {
+            color: red;
+        }
+        #C_language_progress {
+            border: none;
+            border-radius: 10px;
+            color: red;
+            transition: width 0.3s ease;
+        }
+        .skill {
+            width: 40%;
+            font-size: smaller;
+            vertical-align: bottom;
+        }
+        .progress {
+            width: 60%;
+            padding-left: 3%;
+            vertical-align: middle;
+        }
+        .father_progress {
+            width: 100%;
+            height: 10px;
+            background-color: lightgray;
+            border-radius: 5px;
+            margin-bottom: 0px;
+        }
+        .son_progress {
+            height: 100%;
+            border-radius: 5px;
+        }
+        #C {
+            background-color: red;
+            width: 90%;
+        }
+        #linux {
+            background-color: blue;
+            width: 85%;
+        }
+        #web {
+            background-color: darkblue;
+            width: 85%;
+        }
+        #MYSQL {
+            background-color: green;
+            width: 40%;
+        }
+        #HTML {
+            background-color: pink;
+            width: 40%;
+        }
+        #CSS {
+            background-color: yellow;
+            width: 40%;
+        }
+        #JavaScript {
+            background-color: blueviolet;
+            width: 40%;
+        }
+        #Python {
+            background-color: deepskyblue;
+            width: 40%;
+        }
+        #ICP {
+            vertical-align: bottom;
+        }
+        .ICP_link {
+            text-decoration: none;
+            font-weight: normal;
+            color: #008080;
         }
     </style>
 </head>
 <body>
-    <h1 class="title">扶桑的基础前端作品</h1>
-    <div class="tables">
-        <table class="table">
-            <thead>
-                <tr>
-                    <td class="demos">demo</td>
-                    <td class="links">超链接</td>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="demo">表白墙</td>
-                    <td class="link"><a href="demos/demo1.html">demo1</a></td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="brief">
+        <div class="describe">
+            <p><a class="title" href="/">冬青の个人主页</a></p>
+            <img src="img/me.jpg" width="250px">
+            <p class="sun">* 太陽 *</p>
+            <a href="https://github.com/Hrs88" class="link" target="_blank">View My Github Profile</a>
+        </div>
+        <div id="ICP">
+            <p style="font-size: 12px;">
+                <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" class="ICP_link">苏ICP备2025177914号</a><br>
+                页面风格借鉴于<a href="https://hic.top/" target="_blank" class="ICP_link">成成0v0の个人主页</a>
+            </p>
+        </div>
+    </div>
+    <div class="content">
+        <div>
+            <h2>Hi~</h2>
+            <p class="text">
+                你好~<br>
+                这里是我的个人网页，也许会用来记录一些最近的状态。<br>
+                这里的一切——前端与后端，都是由我自己亲手从零开始搭建起来的，也许一切都过于青涩，但它是会跟我一起成长的！<br>
+            </p>
+            <hr>
+            <h2>技术栈</h2>
+            <table style="width: 100%;">
+                <tbody style="width: 100%;">
+                    <tr>
+                        <td class="skill">C/C++编程</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="C"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">Linux系统编程</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="linux"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">网络编程及原理</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="web"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">MYSQL</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="MYSQL"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">HTML</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="HTML"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">CSS</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="CSS"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">JavaScript</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="JavaScript"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="skill">Python</td>
+                        <td class="progress">
+                            <div class="father_progress">
+                                <div class="son_progress" id="Python"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </body>
 </html>
