@@ -290,7 +290,8 @@ void* timed_disconnection(void*)
         sleep(default_fixed_time);
         _log(INFO,__FILE__,__LINE__,"%d s timed disconnection.",default_fixed_time);
         get_safe_lock();
-        for(auto e : safe_code)
+        std::vector<connection*> _safe_code(safe_code.begin(),safe_code.end());
+        for(auto e : _safe_code)
         {
             if(time(nullptr) - e->get_last_hit() > default_fixed_time)
             {
