@@ -54,6 +54,7 @@ public:
         unlock();
     }
     time_t get_last_hit() {return _last_hit;}
+    int get_epfd() {return __epfd;}
     void _readtobuff()
     {
         char buffer[default_recv];

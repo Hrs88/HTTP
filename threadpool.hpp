@@ -49,7 +49,7 @@ public:
         }
         _log(INFO,__FILE__,__LINE__,"the %d threads in threadpool is created successfully.",_thread_num);
     }
-    void push_task(connection* p_con)                       //生产者进行生产
+    void push_task(std::pair<connection*,unsigned int> p_con)                       //生产者进行生产
     {
         lock();
         while(is_full()) p_wait();
@@ -58,9 +58,9 @@ public:
         unlock();
         _log(INFO,__FILE__,__LINE__,"push a task.");
     }
-    connection& pop_task()                                  //消费者进行消费
+    std::pair<connection*,unsigned int> pop_task()                                  //消费者进行消费
     {
-        connection* next_task = nullptr;
+        std::pair<connection*,unsigned int> next_task;
         lock();
         while(is_empty()) c_wait();
         next_task = _tasks.front();
@@ -68,11 +68,11 @@ public:
         p_wake();
         unlock();
         _log(INFO,__FILE__,__LINE__,"get a task.");
-        return *next_task;
+        return next_task;
     }
 private:
     std::unordered_set<pthread_t> _threads;
-    std::queue<connection*> _tasks; 
+    std::queue<std::pair<connection*,unsigned int>> _tasks; 
     pthread_mutex_t _lock;
     pthread_cond_t _c_cond;
     pthread_cond_t _p_cond;
@@ -86,13 +86,36 @@ private:
     {
         while(true)
         {
-            connection& con = _tp->pop_task();
-            if(con.handle())
+            std::pair<connection*,unsigned int> task = _tp->pop_task();
+            connection& con = *task.first;
+            unsigned int events = task.second;
+            if(events&EPOLLHUP || events&EPOLLERR)
             {
-                con._sendtoclient();
-                _log(INFO,__FILE__,__LINE__,"finish a task.");
+                _log(INFO,__FILE__,__LINE__,"%d fd has a error event.",con.getfd());
+                get_safe_lock();
+                if(safe_code.count(&con))
+                    con._except_cb(con);
+                put_safe_lock();
             }
-            else _log(INFO,__FILE__,__LINE__,"request is incomplete.");
+            else if(events&EPOLLIN)
+            {
+                _log(INFO,__FILE__,__LINE__,"%d fd has a read event.",con.getfd());
+                if(con._recv_cb) con._recv_cb(con);
+                else 
+                {
+                    con._readtobuff();
+                    epoll_data_t new_data;
+                    new_data.fd = con.getfd();
+                    struct epoll_event new_event = {default_outevent,new_data};
+                    epoll_ctl(con.get_epfd(),EPOLL_CTL_ADD,con.getfd(),&new_event);
+                }
+            }
+            else if(events&EPOLLOUT)
+            {
+                _log(INFO,__FILE__,__LINE__,"%d fd has a write event.",con.getfd());
+                if(con.handle()) con._sendtoclient();
+                else _log(INFO,__FILE__,__LINE__,"request is incomplete.");
+            }
         }
     }
 };

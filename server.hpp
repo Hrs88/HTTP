@@ -156,27 +156,7 @@ public:
                 unsigned int events = _occur[i].events;
                 int fd = _occur[i].data.fd;
                 if(fd != _listen_socket) epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,nullptr);
-                if(events&EPOLLHUP || events&EPOLLERR)
-                {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a error event.",fd);
-                    get_safe_lock();
-                    if(safe_code.count(_connects[fd]))
-                        _connects[fd]->_except_cb(*_connects[fd]);
-                    put_safe_lock();
-                    continue;
-                }
-                if(events&EPOLLIN)
-                {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a read event.",fd);
-                    if(_connects[fd]->_recv_cb)
-                        _connects[fd]->_recv_cb(*_connects[fd]);
-                }
-                else if(events&EPOLLOUT)
-                {
-                    _log(INFO,__FILE__,__LINE__,"%d fd has a write event.",fd);
-                    if(_connects[fd]->_send_cb)
-                        _connects[fd]->_send_cb(*_connects[fd]);
-                }
+                _ptp->push_task(std::make_pair(_connects[fd],events));
             }
         }
     }
@@ -216,9 +196,7 @@ public:
             {
                 _log(WARNING,__FILE__,__LINE__,"IP transform error.");
             }
-            connection* link = new connection(iofd,_epfd,std::bind(&httpsvr::receiver,this,std::placeholders::_1),
-                                                std::bind(&httpsvr::sender,this,std::placeholders::_1),
-                                                std::bind(&httpsvr::excepter,this,std::placeholders::_1));
+            connection* link = new connection(iofd,_epfd,nullptr,nullptr,std::bind(&httpsvr::excepter,this,std::placeholders::_1));
             link->set_ip(_ip);
             link->set_port(port);
             _connects.insert(std::make_pair(iofd,link));
@@ -232,18 +210,6 @@ public:
             _log(INFO,__FILE__,__LINE__,"get a new link: %d",iofd);
         }
     }
-    void sender(connection& con)
-    {
-        _ptp->push_task(&con);
-    }
-    void receiver(connection& con)
-    {
-        con._readtobuff();
-        if(issafe(con.getfd()))   
-        {
-            _ptp->push_task(&con);
-        }
-    }
     void excepter(connection& con)          //进入该函数前就已得到安全锁，无需再加锁
     {
         safe_code.erase(&con);
@@ -252,12 +218,6 @@ public:
         close(fd);
         delete &con;
         _log(INFO,__FILE__,__LINE__,"delete a link: %d",fd);
-    }
-    bool issafe(int fd)
-    {
-        auto it = _connects.find(fd);
-        if(it != _connects.end()) return true;
-        return false;
     }
     bool create_timed_disconnection()
     {
