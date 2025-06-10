@@ -10,15 +10,12 @@
 #include<fcntl.h>
 #include<unistd.h>
 #include"log.hpp"
+#include"comm.hpp"
 const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
 static const std::string web = "./web";
 static const std::string linux_sep = "\r\n";
 static const std::string not_found = web + "/errors/404.html";
-std::unordered_map<std::string,std::string> content_type = {
-    {".html","Content-Type: text/html; charset=UTF-8"},
-    {".jpg","Content-Type: image/jpeg; charset=binary"}
-};
 class request
 {
 public:
@@ -120,13 +117,24 @@ private:
             else
             {
                 _log(INFO,__FILE__,__LINE__,"the file is a normal file or web page.");
-                std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-                std::string rp_header = content_type[page_path.substr(page_path.rfind("."))] + linux_sep;
-                std::vector<char> rp_body;
-                get_rp_body(fd,rp_body);
-                close(fd);
-                rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
-                return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+                size_t suffix_pos = page_path.rfind(".");
+                if(suffix_pos == std::string::npos)
+                {
+                    _log(WARNING,__FILE__,__LINE__,"the file has no suffix!");
+                    close(fd);
+                    return page404();
+                }
+                else
+                {
+                    std::string suffix = page_path.substr(suffix_pos);
+                    std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
+                    std::string rp_header = "Content-Type: " + content_type[suffix] + linux_sep;
+                    std::vector<char> rp_body;
+                    get_rp_body(fd,rp_body);
+                    close(fd);
+                    rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
+                    return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+                }
             }
         }
         else if(S_ISDIR(file_attribute.st_mode))                                                //文件是目录文件
