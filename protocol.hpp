@@ -7,6 +7,7 @@
 #include<unordered_map>
 #include<sys/types.h>
 #include<sys/stat.h>
+#include<sys/wait.h>
 #include<fcntl.h>
 #include<unistd.h>
 #include"log.hpp"
@@ -164,5 +165,46 @@ private:
     std::pair<std::string,std::vector<char>> CGI_solve(std::string& exe_path)
     {
         return page404();
+        int ptoc[2]; //父写子读
+        int ctop[2]; //父读子写
+        if(pipe(ptoc) < 0)
+        {
+            _log(ERROR,__FILE__,__LINE__,"pipe ptoc create error!");
+            return page404();
+        }
+        if(pipe(ctop) < 0)       
+        {
+            _log(ERROR,__FILE__,__LINE__,"pipe ctop create error!");
+            for(auto e : ptoc) close(e);
+            return page404();
+        }
+        pid_t id = fork();
+        if(id < 0) 
+        {
+            _log(ERROR,__FILE__,__LINE__,"fork error!");
+            for(auto e : ptoc) close(e);
+            for(auto e : ctop) close(e);
+            return page404();
+        }
+        else if(id == 0) //子进程
+        {
+            close(ptoc[1]);
+            close(ctop[0]);
+            int recvfd = ptoc[0];
+            int sendfd = ctop[1];
+            dup2(recvfd,0);
+            dup2(sendfd,1);
+            close(recvfd);
+            close(sendfd);
+            execl(exe_path.c_str(),exe_path.c_str(),nullptr);
+        }
+        else //父进程
+        {
+            close(ptoc[0]);
+            close(ctop[1]);
+            int recvfd = ctop[0];
+            int sendfd = ptoc[1];
+            waitpid(id,nullptr,0);
+        }
     }
 };
