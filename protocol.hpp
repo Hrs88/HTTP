@@ -27,15 +27,15 @@ public:
     }
     std::pair<std::string,std::vector<char>> response()
     {
+        std::string page_path = web + _uri;
         if(_method == "GET")
         {
-            std::string page_path = web + _uri;
             if(page_path[page_path.size()-1] == '/') page_path += "index.html";
             return page_get(page_path);
         }
         else if(_method == "POST")
         {
-            return page404();       //暂不处理
+            return CGI_solve(page_path);
         }
         else return page404();      //不处理
     }
@@ -112,6 +112,7 @@ private:
         {
             if(file_attribute.st_mode & S_IXUSR || file_attribute.st_mode & S_IXGRP || file_attribute.st_mode & S_IXOTH)        //文件为可执行文件需要特殊处理
             {
+                _log(INFO,__FILE__,__LINE__,"the file is executable.");
                 close(fd);
                 return CGI_solve(page_path);                                                    //CGI处理数据  结果数据 + 报头构建
             }
@@ -164,7 +165,6 @@ private:
     }
     std::pair<std::string,std::vector<char>> CGI_solve(std::string& exe_path)
     {
-        return page404();
         int ptoc[2]; //父写子读
         int ctop[2]; //父读子写
         if(pipe(ptoc) < 0)
@@ -196,15 +196,39 @@ private:
             dup2(sendfd,1);
             close(recvfd);
             close(sendfd);
+            std::string method_env = "METHOD=" + _method;
+            putenv(const_cast<char*>(method_env.c_str()));
+            if(_method == "GET")
+            {
+                std::string arguments_env = "ARGUMENTS=" + _arguments;
+                putenv(const_cast<char*>(arguments_env.c_str()));
+            }
+            else
+            {
+                std::string body_size_env = "BODY_SIZE=" + std::to_string(_rq_body.size());
+                putenv(const_cast<char*>(body_size_env.c_str()));
+            }
             execl(exe_path.c_str(),exe_path.c_str(),nullptr);
         }
-        else //父进程
+        //父进程
+        close(ptoc[0]);
+        close(ctop[1]);
+        int recvfd = ctop[0];
+        int sendfd = ptoc[1];
+        if(_method == "POST")
         {
-            close(ptoc[0]);
-            close(ctop[1]);
-            int recvfd = ctop[0];
-            int sendfd = ptoc[1];
-            waitpid(id,nullptr,0);
+            size_t total = 0;
+            size_t size = 0;
+            std::string body(_rq_body.begin(),_rq_body.end());
+            while(total < body.size())
+            {
+                size = write(sendfd,body.c_str()+total,body.size()-total);
+                total += size;
+            }
         }
+        waitpid(id,nullptr,0);
+        close(recvfd);
+        close(sendfd);
+        return page404();
     }
 };
