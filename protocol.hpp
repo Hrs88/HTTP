@@ -52,7 +52,7 @@ private:
     std::unordered_map<std::string,std::string> _header;
     void get(const std::string& sig,const std::string sep)
     {
-        std::string tmp;
+        std::string tmp = " ";
         size_t n = 0;
         size_t m = sig.find(sep);
         _rq_head_line = sig.substr(n,m-n);
@@ -205,7 +205,7 @@ private:
             }
             else
             {
-                std::string body_size_env = "BODY_SIZE=" + std::to_string(_rq_body.size());
+                std::string body_size_env = "BODY_SIZE=" + _header["Content-Length"];
                 putenv(const_cast<char*>(body_size_env.c_str()));
             }
             execl(exe_path.c_str(),exe_path.c_str(),nullptr);

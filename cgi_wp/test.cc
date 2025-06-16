@@ -7,6 +7,7 @@ int main()
 {
     std::string method = getenv("METHOD");
     std::fstream file("logs/info.txt",std::ios::out);
+    file << "CGI启动" << std::endl;
     if(method == "GET")
     {
         std::string arguments = getenv("ARGUMENTS");

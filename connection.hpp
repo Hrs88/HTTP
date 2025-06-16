@@ -124,17 +124,17 @@ public:
         while(left != right)
         {
             left = right + sep.size();
-            right = left;
             right = tmp.find(sep,left);
             if(right == std::string::npos) return 0;
         }
         size_t size = right + sep.size();
         size_t len = 0;
-        if(method == "GET" || method == "POST" && tmp.find(CL) > size) return size;
+        if(method == "GET" || (method == "POST" && tmp.find(CL) > size)) return size;
         else if(method == "POST" && ((len = tmp.find(CL)) < size))
         {
             len += CL.size();
-            return size + atoi(tmp.substr(len,tmp.find(sep,len)).c_str());
+            size += std::stoul(tmp.substr(len,tmp.find(sep,len)));
+            return size <= tmp.size() ? size : 0;
         }
         else return 0;
     }
