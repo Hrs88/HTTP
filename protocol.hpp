@@ -1,5 +1,6 @@
 #pragma once
 #include<sstream>
+#include<fstream>
 #include<utility>
 #include<string>
 #include<vector>
@@ -12,6 +13,8 @@
 #include<unistd.h>
 #include"log.hpp"
 #include"comm.hpp"
+//#define DBG
+#define CGI_TRIGGER
 const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
 static const std::string web = "./web";
@@ -37,7 +40,7 @@ public:
         {
             return CGI_solve(page_path);
         }
-        else return page404();      //不处理
+        else return page_error(404);      //不处理
     }
 private:
     //原始数据
@@ -52,6 +55,12 @@ private:
     std::unordered_map<std::string,std::string> _header;
     void get(const std::string& sig,const std::string sep)
     {
+#ifdef DBG
+        std::fstream file("logs/sig.txt",std::ios::app);
+        file << sig << std::endl;
+        file << "---------------------------------------" << std::endl;
+        file.close();
+#endif
         std::string tmp = " ";
         size_t n = 0;
         size_t m = sig.find(sep);
@@ -96,17 +105,30 @@ private:
         rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
         return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
     }
+    std::pair<std::string,std::vector<char>> page_error(int error_code)
+    {
+        std::string error_page = web + "/errors/" + std::to_string(error_code) + ".html";
+        std::string rp_head_line = "HTTP/1.0 " + std::to_string(error_code) + " " + response_code[error_code] + linux_sep;
+        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
+        std::vector<char> rp_body;
+        int fd = open(error_page.c_str(),O_RDONLY);
+        if(fd < 0) return page_error(404);
+        get_rp_body(fd,rp_body);
+        close(fd);
+        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
+        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+    }
     std::pair<std::string,std::vector<char>> page_get(std::string& page_path)
     {
         int fd = open(page_path.c_str(),O_RDONLY);
-        if(fd < 0) return page404();                //页面不存在
+        if(fd < 0) return page_error(404);                //页面不存在
         struct stat file_attribute;
         int n = fstat(fd,&file_attribute);
         if(n == 0) _log(INFO,__FILE__,__LINE__,"scan the file success.");       //获取文件属性成功
         else 
         {
             _log(ERROR,__FILE__,__LINE__,"scan the file fail.");                //获取文件属性失败
-            return page404();
+            return page_error(404);
         }
         if(S_ISREG(file_attribute.st_mode))                                                     //文件是普通文件
         {
@@ -124,7 +146,7 @@ private:
                 {
                     _log(WARNING,__FILE__,__LINE__,"the file has no suffix!");
                     close(fd);
-                    return page404();
+                    return page_error(404);
                 }
                 else
                 {
@@ -150,7 +172,7 @@ private:
         {
             _log(WARNING,__FILE__,__LINE__,"the file is not a normal file.");
             close(fd);
-            return page404();
+            return page_error(404);
         }
     }
     void get_rp_body(int fd,std::vector<char>& rp_body)
@@ -165,18 +187,25 @@ private:
     }
     std::pair<std::string,std::vector<char>> CGI_solve(std::string& exe_path)
     {
+#ifdef CGI_TRIGGER
+        std::fstream file("logs/sig.txt",std::ios::app);
+        file << "触发CGI" << std::endl;
+        file << "uri:" << _uri << ",arguments:" << _arguments << std::endl;
+        file << "---------------------------------------------------------" << std::endl;
+        file.close();
+#endif
         int ptoc[2]; //父写子读
         int ctop[2]; //父读子写
         if(pipe(ptoc) < 0)
         {
             _log(ERROR,__FILE__,__LINE__,"pipe ptoc create error!");
-            return page404();
+            return page_error(404);
         }
         if(pipe(ctop) < 0)       
         {
             _log(ERROR,__FILE__,__LINE__,"pipe ctop create error!");
             for(auto e : ptoc) close(e);
-            return page404();
+            return page_error(404);
         }
         pid_t id = fork();
         if(id < 0) 
@@ -184,7 +213,7 @@ private:
             _log(ERROR,__FILE__,__LINE__,"fork error!");
             for(auto e : ptoc) close(e);
             for(auto e : ctop) close(e);
-            return page404();
+            return page_error(404);
         }
         else if(id == 0) //子进程
         {
@@ -209,6 +238,8 @@ private:
                 putenv(const_cast<char*>(body_size_env.c_str()));
             }
             execl(exe_path.c_str(),exe_path.c_str(),nullptr);
+            _log(ERROR,__FILE__,__LINE__,"execl error!");
+            exit(0);
         }
         //父进程
         close(ptoc[0]);
@@ -229,6 +260,6 @@ private:
         waitpid(id,nullptr,0);
         close(recvfd);
         close(sendfd);
-        return page404();
+        return page_error(404);
     }
 };

@@ -2,19 +2,22 @@
 #include<cstdlib>
 #include<fstream>
 #include<unistd.h>
+#include"../comm.hpp"
 const size_t buff_size = 256;
 int main()
 {
     std::string method = getenv("METHOD");
-    std::fstream file("logs/info.txt",std::ios::out);
+    std::fstream file("logs/info.txt",std::ios::app);
     file << "CGI启动" << std::endl;
     if(method == "GET")
     {
+        file << "方法是GET" << std::endl;
         std::string arguments = getenv("ARGUMENTS");
         file << "方法:GET,参数为:" << arguments << std::endl;
     }
     else if(method == "POST")
     {
+        file << "方法是POST" << std::endl;
         std::string body_size = getenv("BODY_SIZE");
         std::string body;
         size_t size = std::stoul(body_size);
@@ -26,10 +29,12 @@ int main()
             n = read(0,buff,sizeof(buff));
             total += n;
             body += buff;
+            file << "进入循环,n为:" << n << ",读取了:" << buff << std::endl;
         }
         file << "方法:POST,内容大小:" << body_size << ",内容为:" << body << std::endl;
     }
     else file << "非法方法" << std::endl;
+    file << "-----------------------------------------" << std::endl; 
     file.close();
     return 0;
 }
