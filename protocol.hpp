@@ -14,7 +14,7 @@
 #include"log.hpp"
 #include"comm.hpp"
 //#define DBG
-#define CGI_TRIGGER
+//#define CGI_TRIGGER
 const size_t default_rdbuff_size = 1024;
 static const std::string http_sep = ": ";
 static const std::string web = "./web";
@@ -31,14 +31,10 @@ public:
     std::pair<std::string,std::vector<char>> response()
     {
         std::string page_path = web + _uri;
-        if(_method == "GET")
+        if(_method == "GET" || _method == "POST")
         {
             if(page_path[page_path.size()-1] == '/') page_path += "index.html";
             return page_get(page_path);
-        }
-        else if(_method == "POST")
-        {
-            return CGI_solve(page_path);
         }
         else return page_error(404);      //不处理
     }
