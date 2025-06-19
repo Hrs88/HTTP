@@ -121,6 +121,9 @@
         #ICP {
             vertical-align: bottom;
         }
+        #message {
+            margin-top: 10%;
+        }
         .ICP_link {
             text-decoration: none;
             font-weight: normal;
@@ -132,13 +135,21 @@
         .title:hover {
             color: #006060;
         }
+        .name {
+            font-size: smaller;
+            width: 20%;
+            vertical-align: top;
+        }
+        .text {
+            width: 80%;
+        }
     </style>
 </head>
 <body>
     <div class="brief">
         <div class="describe">
             <p><a class="title" href="/">冬青の个人主页</a></p>
-            <img src="img/me.jpg" width="250px">
+            <img src="/img/me.jpg" width="250px">
             <p class="sun">* 太陽 *</p>
             <a href="https://github.com/Hrs88" class="link" target="_blank">View My Github Profile</a>
         </div>
@@ -147,6 +158,30 @@
                 <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank" class="ICP_link">苏ICP备2025177914号</a><br>
                 页面风格借鉴于<a href="https://hic.top/" target="_blank" class="ICP_link">成成0v0の个人主页</a>
             </p>
+        </div>
+        <div id="message">
+            <form action="/exe/message" method="POST" accept-charset="UTF-8">
+                <span style="display: flex; width: 75%; justify-content: center;"><h5>告诉我你是谁</h5></span>
+                <span style="display: flex; width: 75%; justify-content: center;">
+                    <table style="width: 100%;">
+                        <tbody>
+                            <tr>
+                                <td class="name"><label for="message_name" class="form_font">称呼:</label></td>
+                                <td class="text"><input type="text" id="message_name" name="name" style="width: 80%;"></td>
+                            </tr>
+                            <tr>
+                                <td class="name"><label for="message_contact" class="form_font">联系方式:</label></td>
+                                <td class="text"><input type="text" id="message_contact" name="contact" style="width: 80%;"></td>
+                            </tr>
+                            <tr>
+                                <td class="name"><label for="message_body" class="form_font">想对我说:</label></td>
+                                <td class="text"><textarea id="message_body" name="body" style="width: 80%"></textarea></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </span>
+                <span style="display: flex; width: 75%; justify-content: center;"><input type="submit" value="让我康康"></span>
+            </form>
         </div>
     </div>
     <div class="content">

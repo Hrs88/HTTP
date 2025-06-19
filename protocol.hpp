@@ -20,6 +20,7 @@ static const std::string http_sep = ": ";
 static const std::string web = "./web";
 static const std::string linux_sep = "\r\n";
 static const std::string not_found = web + "/errors/404.html";
+static const std::string index_page = web + "/index.html";
 class request
 {
 public:
@@ -114,7 +115,7 @@ private:
         rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
         return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
     }
-    std::pair<std::string,std::vector<char>> page_get(std::string& page_path)
+    std::pair<std::string,std::vector<char>> page_get(const std::string& page_path)
     {
         int fd = open(page_path.c_str(),O_RDONLY);
         if(fd < 0) return page_error(404);                //页面不存在
@@ -181,7 +182,7 @@ private:
             n = read(fd,rdbuff,sizeof(rdbuff));
         }
     }
-    std::pair<std::string,std::vector<char>> CGI_solve(std::string& exe_path)
+    std::pair<std::string,std::vector<char>> CGI_solve(const std::string& exe_path)
     {
 #ifdef CGI_TRIGGER
         std::fstream file("logs/sig.txt",std::ios::app);
@@ -256,6 +257,6 @@ private:
         waitpid(id,nullptr,0);
         close(recvfd);
         close(sendfd);
-        return page_error(404);
+        return page_get(index_page);
     }
 };
