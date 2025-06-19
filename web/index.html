@@ -139,9 +139,69 @@
             font-size: smaller;
             width: 25%;
             vertical-align: top;
+            color: rgb(47,79,79);
         }
         .text {
             width: 80%;
+        }
+        #submit-btn {
+            display: inline-block;
+            padding: 5px 5px 5px 5px;
+            background: rgb(70,130,180);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(66, 153, 225, 0.2);
+        }
+        #message_body {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e0; /* 中性灰边框 */
+            border-radius: 8px; /* 圆角 */
+            outline: none; /* 移除默认焦点轮廓 */
+            background-color: #f8fafc; /* 浅灰蓝背景 */
+            color: #334155; /* 深灰蓝文字 */
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: smaller;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        #message_name {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e0; /* 中性灰边框 */
+            border-radius: 4px; /* 圆角 */
+            outline: none; /* 移除默认焦点轮廓 */
+            background-color: #f8fafc; /* 浅灰蓝背景 */
+            color: #334155; /* 深灰蓝文字 */
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: smaller;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        #message_contact {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #cbd5e0; /* 中性灰边框 */
+            border-radius: 4px; /* 圆角 */
+            outline: none; /* 移除默认焦点轮廓 */
+            background-color: #f8fafc; /* 浅灰蓝背景 */
+            color: #334155; /* 深灰蓝文字 */
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: smaller;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .message_line {
+            margin-bottom: 0px;
         }
     </style>
 </head>
@@ -161,26 +221,26 @@
         </div>
         <div id="message">
             <form action="/exe/message" method="POST" accept-charset="UTF-8">
-                <span style="display: flex; width: 64%; justify-content: center;"><h5>告诉我你是谁</h5></span>
-                <span style="display: flex; width: 80%; justify-content: left;">
+                <span style="display: flex; width: 64%; justify-content: center; margin-bottom: 0px; color: rgb(70,130,180);"><h5>告诉我你是谁</h5></span>
+                <span style="display: flex; width: 80%; justify-content: left; margin-bottom: 0px;">
                     <table style="width: 80%;">
-                        <tbody>
-                            <tr>
+                        <tbody style="margin-bottom: 0px;">
+                            <tr class="message_line">
                                 <td class="name"><label for="message_name" class="form_font">称呼:</label></td>
                                 <td class="text"><input type="text" id="message_name" name="name" style="width: 100%;"></td>
                             </tr>
-                            <tr>
+                            <tr class="message_line">
                                 <td class="name"><label for="message_contact" class="form_font">联系方式:</label></td>
                                 <td class="text"><input type="text" id="message_contact" name="contact" style="width: 100%;"></td>
                             </tr>
-                            <tr>
+                            <tr class="message_line">
                                 <td class="name"><label for="message_body" class="form_font">想对我说:</label></td>
                                 <td class="text"><textarea id="message_body" name="body" style="width: 100%"></textarea></td>
                             </tr>
                         </tbody>
                     </table>
                 </span>
-                <span style="display: flex; width: 64%; justify-content: center;"><input type="submit" value="让我康康"></span>
+                <span style="display: flex; width: 64%; justify-content: center; margin-bottom: 0px;"><input type="submit" value="让我康康" id="submit-btn"></span>
             </form>
         </div>
     </div>
