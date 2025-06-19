@@ -21,6 +21,7 @@ static const std::string web = "./web";
 static const std::string linux_sep = "\r\n";
 static const std::string not_found = web + "/errors/404.html";
 static const std::string index_page = web + "/index.html";
+static const std::string http_version = "HTTP/1.0";
 class request
 {
 public:
@@ -91,29 +92,15 @@ private:
             _uri = _uri.substr(0,pos);
         }
     }
-    std::pair<std::string,std::vector<char>> page404()
-    {
-        std::string rp_head_line = "HTTP/1.0 404 Not Found" + linux_sep;
-        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
-        std::vector<char> rp_body;
-        int fd = open(not_found.c_str(),O_RDONLY);
-        get_rp_body(fd,rp_body);
-        close(fd);
-        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
-        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
-    }
     std::pair<std::string,std::vector<char>> page_error(int error_code)
     {
         std::string error_page = web + "/errors/" + std::to_string(error_code) + ".html";
-        std::string rp_head_line = "HTTP/1.0 " + std::to_string(error_code) + " " + response_code[error_code] + linux_sep;
-        std::string rp_header = "Content-Type: text/html; charset=UTF-8" + linux_sep;
         std::vector<char> rp_body;
         int fd = open(error_page.c_str(),O_RDONLY);
         if(fd < 0) return page_error(404);
         get_rp_body(fd,rp_body);
         close(fd);
-        rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep; 
-        return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+        return std::make_pair(get_rp_head(error_code,".html",rp_body.size()),rp_body);
     }
     std::pair<std::string,std::vector<char>> page_get(const std::string& page_path)
     {
@@ -148,13 +135,10 @@ private:
                 else
                 {
                     std::string suffix = page_path.substr(suffix_pos);
-                    std::string rp_head_line = "HTTP/1.0 200 OK" + linux_sep;
-                    std::string rp_header = "Content-Type: " + content_type[suffix] + linux_sep;
                     std::vector<char> rp_body;
                     get_rp_body(fd,rp_body);
                     close(fd);
-                    rp_header += "Content-Length: " + std::to_string(rp_body.size()) + linux_sep;
-                    return std::make_pair(rp_head_line + rp_header + linux_sep,rp_body);
+                    return std::make_pair(get_rp_head(200,suffix,rp_body.size()),rp_body);
                 }
             }
         }
@@ -171,6 +155,13 @@ private:
             close(fd);
             return page_error(404);
         }
+    }
+    std::string get_rp_head(int rp_code,const std::string& suffix,size_t body_size)
+    {
+        std::string rp_head_line = http_version + " " + std::to_string(rp_code) + " " + response_code[rp_code] + linux_sep;
+        std::string rp_header = "Content-Type: " + content_type[suffix] + linux_sep;
+        rp_header += "Content-Length: " + std::to_string(body_size) + linux_sep;
+        return rp_head_line + rp_header + linux_sep;
     }
     void get_rp_body(int fd,std::vector<char>& rp_body)
     {
